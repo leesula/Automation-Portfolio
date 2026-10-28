@@ -1,0 +1,99 @@
+{
+  "name": "Tool - Get Available Slots",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a39f42aa-06a7-44f9-9b60-85280a6a6923",
+      "name": "Execute Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "40fbb450fae7084c6984d416b8ea80f744e5646a81af237c9fd954e9cef43300@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "ProoertyBookings"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $now.setZone('Asia/Kolkata').toISO() }}",
+        "timeMax": "={{ $now.setZone('Asia/Kolkata').plus({ days: 9 }).toISO() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        0
+      ],
+      "id": "ec0e0085-fbf3-423a-a1ab-eb7d05230ad5",
+      "name": "Get Calendar Events",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "LIa1LOftnfxiQxA7",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ===== CONFIG: keep identical in 'Tool - Book Appointment (Verified)' =====\nconst SLOT_MIN = 30;          // fixed appointment length (minutes)\nconst WORK_START = 10;        // 10:00 IST\nconst WORK_END = 18;          // 18:00 IST (last slot must END by this)\nconst WORK_DAYS = [1,2,3,4,5,6]; // Mon-Sat (0 = Sunday)\nconst DAYS = 7;               // look ahead\nconst LEAD_HOURS = 2;         // no slots sooner than this\nconst MAX_SLOTS = 6, MAX_PER_DAY = 3;\n// ==========================================================================\nconst OFFSET = 5.5 * 3600 * 1000; // IST, no DST\nconst toMs = (x) => x && (x.dateTime ? Date.parse(x.dateTime) : x.date ? Date.parse(x.date + 'T00:00:00+05:30') : NaN);\nconst busy = $input.all().map(i => i.json)\n  .filter(e => e && e.id && e.status !== 'cancelled')\n  .map(e => ({ s: toMs(e.start), e: toMs(e.end) }))\n  .filter(b => !isNaN(b.s) && !isNaN(b.e));\nconst now = Date.now(), earliest = now + LEAD_HOURS * 3600e3;\nconst ist = new Date(now + OFFSET);\nconst y = ist.getUTCFullYear(), m = ist.getUTCMonth(), d0 = ist.getUTCDate();\nconst iso = (ms) => new Date(ms + OFFSET).toISOString().slice(0, 19) + '+05:30';\nconst label = (ms) => new Date(ms).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });\nconst out = [];\nfor (let d = 0; d <= DAYS && out.length < MAX_SLOTS; d++) {\n  if (!WORK_DAYS.includes(new Date(Date.UTC(y, m, d0 + d)).getUTCDay())) continue;\n  const free = [];\n  for (let mins = WORK_START * 60; mins + SLOT_MIN <= WORK_END * 60; mins += SLOT_MIN) {\n    const start = Date.UTC(y, m, d0 + d, 0, mins) - OFFSET, end = start + SLOT_MIN * 60000;\n    if (start < earliest) continue;\n    if (busy.some(b => b.s < end && b.e > start)) continue;\n    free.push({ start_time: iso(start), end_time: iso(end), label: label(start) });\n  }\n  const pick = free.length <= MAX_PER_DAY ? free : [free[0], free[Math.floor(free.length / 2)], free[free.length - 1]];\n  for (const s of pick) if (out.length < MAX_SLOTS) out.push(s);\n}\nreturn [{ json: {\n  success: true, timezone: 'Asia/Kolkata', slot_length_minutes: SLOT_MIN, available_slots: out,\n  message: out.length ? 'Offer ONLY these slots. When booking, pass start_time exactly as given.' : 'No free slots in the next 7 days. Do not invent slots; tell the customer and offer to have the team contact them.'\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        0
+      ],
+      "id": "1ebdf2e4-22e5-48e6-abe3-af984abde2c4",
+      "name": "Compute Free Slots"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Calendar Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Calendar Events": {
+      "main": [
+        [
+          {
+            "node": "Compute Free Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "34a73f9e-c4c7-409d-8525-0e12abf36090",
+  "meta": {
+    "instanceId": "2366a041569ff34fcf12a0a2092fd4e7c08697b8afa808acfe3b171961f16201"
+  },
+  "nodeGroups": [],
+  "id": "2I4v1U2hYKXx7zUb",
+  "tags": []
+}

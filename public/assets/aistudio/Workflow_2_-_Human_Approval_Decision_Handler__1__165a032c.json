@@ -1,0 +1,1059 @@
+{
+  "name": "Workflow 2 - Human Approval Decision Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "trigger": [
+          "message"
+        ],
+        "channelId": {
+          "__rl": true,
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1296,
+        -416
+      ],
+      "id": "29c06529-4c99-40c5-98f8-3bb3747ec7da",
+      "name": "Receive Approval Decision",
+      "webhookId": "f251125d-242c-4246-b742-c0a933aff481",
+      "credentials": {
+        "slackApi": {
+          "id": "uEiDQinmVMw0tEvP",
+          "name": "Slack account"
+        }
+      },
+      "notes": "[CONFIGURE THIS] Point at the same Slack channel Workflow 1's 'Inform the team' / approval-notification messages go to."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Expected human reply format, typed directly in Slack:\n//   <approval_request_id> | APPROVE | <optional instruction>\n//   <approval_request_id> | REJECT | <reason>\n//\n// The approval_request_id must be included by the human because Slack\n// threads are not a reliable enough key on their own. Workflow 1's Slack\n// notification should print the approval_request_id in its message text\n// so the human can copy it into their reply.\n\nconst text = ($json.text || '').trim();\nconst pattern = /^([a-zA-Z0-9\\-]+)\\s*\\|\\s*(APPROVE|REJECT)\\s*\\|?\\s*(.*)$/i;\nconst match = text.match(pattern);\n\nif (!match) {\n  return [{\n    json: {\n      valid: false,\n      raw_text: text\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    valid: true,\n    approval_request_id: match[1].trim(),\n    decision: match[2].toUpperCase() === 'APPROVE' ? 'APPROVED' : 'REJECTED',\n    human_instruction: (match[3] || '').trim(),\n    raw_text: text\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        -416
+      ],
+      "id": "ccebd19c-1aad-43ca-abd5-ce79122afac9",
+      "name": "Parse Human Decision"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "ce84bd05-4efe-4c70-bb2a-6d5dba4f8020",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -640,
+        -416
+      ],
+      "id": "727e6ebb-f95d-4d81-be22-b949ac98a054",
+      "name": "Valid Format?"
+    },
+    {
+      "parameters": {
+        "channel": "lead-support-team",
+        "text": "=Sorry, I couldn't read that decision. Please reply using: `<approval_request_id> | APPROVE | optional instructio <approval_request_id> | REJECT | reason`",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        -272
+      ],
+      "id": "86c15113-c1c9-4904-bf5e-cdf894a9c644",
+      "name": "Slack - Malformed Message",
+      "credentials": {
+        "slackApi": {
+          "id": "uEiDQinmVMw0tEvP",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "approval_requests",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "approval_request_id",
+              "keyValue": "={{ $('Parse Human Decision').item.json.approval_request_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        -560
+      ],
+      "id": "01c1777a-bdf6-4744-8ecb-361db08993e0",
+      "name": "Get Approval Request",
+      "credentials": {
+        "supabaseApi": {
+          "id": "MciEL3C0Gjwb2jHY",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "ee9eb5de-7b1e-4326-a9bf-a2837a542436",
+              "leftValue": "={{ $json.approval_request_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -560
+      ],
+      "id": "12c4dc7b-7df3-4fa9-88f0-5153c2057b37",
+      "name": "Request Found?"
+    },
+    {
+      "parameters": {
+        "channel": "lead-support-team",
+        "text": "=Approval request `{{ $('Parse Human Decision').item.json.approval_request_id }}` was not found. No customer message was sent.",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        16,
+        -704
+      ],
+      "id": "ba1513ab-a1a6-4410-a75e-cb9c1e6be8a5",
+      "name": "Slack - Request Not Found",
+      "credentials": {
+        "slackApi": {
+          "id": "uEiDQinmVMw0tEvP",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "approval_requests",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "approval_request_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Parse Human Decision').item.json.approval_request_id }}"
+            },
+            {
+              "keyName": "approval_status",
+              "condition": "eq",
+              "keyValue": "PENDING"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "approval_status",
+              "fieldValue": "={{ $('Parse Human Decision').item.json.decision }}"
+            },
+            {
+              "fieldId": "approval_instruction",
+              "fieldValue": "={{ $('Parse Human Decision').item.json.human_instruction }}"
+            },
+            {
+              "fieldId": "resolved_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        16,
+        -560
+      ],
+      "id": "80761de7-155e-4b28-af38-8968504a003b",
+      "name": "Claim & Store Decision",
+      "credentials": {
+        "supabaseApi": {
+          "id": "MciEL3C0Gjwb2jHY",
+          "name": "Supabase account"
+        }
+      },
+      "notes": "Update only fires WHERE approval_status = 'PENDING'. If another execution already resolved it (a real prior resolution, or a duplicate Slack delivery racing this one), zero rows come back and the next IF safely stops -- no separate 'already resolved' check needed, and no double customer message even on true concurrent delivery."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "e22316de-a41a-4105-be65-c1b9979e8a42",
+              "leftValue": "={{ $json.approval_request_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -560
+      ],
+      "id": "1ead6284-35df-4e99-b078-9c0f9687320e",
+      "name": "Claim Successful?"
+    },
+    {
+      "parameters": {
+        "channel": "lead-support-team",
+        "text": "=Approval request `{{ $('Parse Human Decision').item.json.approval_request_id }}` was already resolved (or this is a duplicate delivery of the same decision). No customer message was sent.",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        464,
+        -704
+      ],
+      "id": "b2f231f2-669b-4235-95b0-8169c50c418e",
+      "name": "Slack - Already Resolved",
+      "credentials": {
+        "slackApi": {
+          "id": "uEiDQinmVMw0tEvP",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "buyer_leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Get Approval Request').item.json.lead_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        464,
+        -432
+      ],
+      "id": "340eefb2-a023-4e3c-9ecb-44affb2908c5",
+      "name": "Get Lead",
+      "credentials": {
+        "supabaseApi": {
+          "id": "MciEL3C0Gjwb2jHY",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "f28b6660-32c9-4454-a9ba-b778c93d8135",
+              "leftValue": "={{ $json.wa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        688,
+        -432
+      ],
+      "id": "4debedfd-53cf-470d-8aa0-3f35687818df",
+      "name": "Lead Found?"
+    },
+    {
+      "parameters": {
+        "channel": "lead-support-team",
+        "text": "=Decision for `{{ $('Parse Human Decision').item.json.approval_request_id }}` was stored ({{ $('Parse Human Decision').item.json.decision }}), but the lead record could not be found, so no customer message was sent.",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        896,
+        -576
+      ],
+      "id": "b18855eb-6e48-434c-867d-07b11c0daeef",
+      "name": "Slack - Lead Missing",
+      "credentials": {
+        "slackApi": {
+          "id": "uEiDQinmVMw0tEvP",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Deterministic 24-hour WhatsApp customer-service-window check.\n// Based ONLY on the customer's latest inbound message timestamp --\n// never on approval creation time, decision time, or execution time.\n\nconst lead = $('Get Lead').item.json;\nconst lastMsgRaw = lead.last_customer_message_at;\n\nif (!lastMsgRaw) {\n  return [{ json: { ...($json), window_status: 'WITHIN_24_HOURS' } }];\n}\n\nconst lastMsg = new Date(lastMsgRaw);\nconst now = new Date();\nconst hoursElapsed = (now.getTime() - lastMsg.getTime()) / (1000 * 60 * 60);\n\nconst window_status = hoursElapsed <= 24 ? 'WITHIN_24_HOURS' : 'OUTSIDE_24_HOURS';\n\nreturn [{ json: { ...($json), window_status, hours_since_last_customer_message: hoursElapsed } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        896,
+        -432
+      ],
+      "id": "b60564a0-422d-4123-8f5f-f16c0c18abd2",
+      "name": "Calculate 24h Window"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Deterministic, template-based customer message -- no AI needed here.\n// Never exposes approval_request_id, Supabase/Slack terms, lead score,\n// or HOT/WARM/COLD labels to the customer.\n\nconst decision = $('Parse Human Decision').item.json.decision;\nconst instruction = ($('Parse Human Decision').item.json.human_instruction || '').trim();\n\nlet message;\nif (decision === 'APPROVED') {\n  message = instruction\n    ? `Good news — I checked with our property team and they confirmed: ${instruction}`\n    : `Good news — I checked with our property team and they've confirmed this for you.`;\n} else {\n  message = instruction\n    ? `I checked with our property team, and unfortunately ${instruction}`\n    : `I checked with our property team, and unfortunately this isn't going to be possible right now.`;\n}\n\nreturn [{ json: { ...($json), customer_message: message } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -432
+      ],
+      "id": "7fe34686-8e79-4039-82c9-2766e933a76a",
+      "name": "Build Customer Response",
+      "notes": "Deliberately deterministic per the spec's 'don't add unnecessary AI' rule. Swap in an LLM call here only if instructions start arriving too free-form to template safely."
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.window_status }}",
+                    "rightValue": "WITHIN_24_HOURS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.window_status }}",
+                    "rightValue": "OUTSIDE_24_HOURS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            },
+            {
+              "conditions": {
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.window_status }}",
+                    "rightValue": "UNKNOWN",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        1344,
+        -432
+      ],
+      "id": "34276a75-2471-4257-9245-bdbd0ed1dbd6",
+      "name": "Route by Window Status"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1301905136342925",
+        "recipientPhoneNumber": "={{ $('Get Lead').item.json.wa_id }}",
+        "textBody": "={{ $json.customer_message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -624
+      ],
+      "id": "29c3ff66-6cfa-4341-9832-174f0160f447",
+      "name": "WhatsApp - Send Free-form",
+      "webhookId": "51a322da-2d92-41f1-9f00-eef3d8a140a5",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "BQZxRLiojPASrK9A",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1301905136342925",
+        "recipientPhoneNumber": "={{ $('Get Lead').item.json.wa_id }}",
+        "textBody": "={{ $json.customer_message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -432
+      ],
+      "id": "af634a54-c558-4051-a2a7-14b99fc54c2b",
+      "name": "WhatsApp - Send Approved Template",
+      "webhookId": "8389fee9-a1a9-475b-9f25-2315ff991599",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "BQZxRLiojPASrK9A",
+          "name": "WhatsApp account"
+        }
+      },
+      "notes": "[CONFIGURE THIS] template name, language, and parameters must match an actually Meta-approved template. This is a placeholder shape only."
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -240
+      ],
+      "id": "75aa157a-06bf-4e88-a98d-7d0681266f21",
+      "name": "Mark Not Sent (Unknown Window)"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "approval_requests",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "approval_request_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Parse Human Decision').item.json.approval_request_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { ...$('Get Approval Request').item.json.metadata, notification_mode: $json.window_status === 'WITHIN_24_HOURS' ? 'FREE_FORM' : 'TEMPLATE', notification_status: 'SENT', notification_sent_at: $now.toISO(), twenty_four_hour_window_status: $json.window_status } }}"
+            },
+            {
+              "fieldId": "reply_sent_to_customer",
+              "fieldValue": "={{ $('Pick Final Message').first().json.customer_message }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        -512
+      ],
+      "id": "35f668e1-27f9-42c0-8154-9a18a2f62cfa",
+      "name": "Update Approval Request (Sent)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "MciEL3C0Gjwb2jHY",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "approval_requests",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "approval_request_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Parse Human Decision').item.json.approval_request_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ { ...$('Get Approval Request').item.json.metadata, notification_mode: 'NOT_SENT', notification_status: 'SKIPPED', twenty_four_hour_window_status: 'UNKNOWN' } }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        -240
+      ],
+      "id": "dc80b08b-e99e-429c-a1e7-245a7705a077",
+      "name": "Update Approval Request (Skipped)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "MciEL3C0Gjwb2jHY",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "lead-support-team",
+        "text": "=Approval request: {{ $('Parse Human Decision').item.json.approval_request_id }}\\nDecision: {{ $('Parse Human Decision').item.json.decision }}\\nCustomer notification: Sent\\nMethod: {{ $('Calculate 24h Window').item.json.window_status === 'WITHIN_24_HOURS' ? 'WhatsApp free-form' : 'Approved WhatsApp template' }}\\n24-hour window: {{ $('Calculate 24h Window').item.json.window_status }}",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        -512
+      ],
+      "id": "1e087594-3149-4cee-88f9-8ee07784b7c5",
+      "name": "Slack - Confirm Resolution (Sent)",
+      "credentials": {
+        "slackApi": {
+          "id": "uEiDQinmVMw0tEvP",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "lead-support-team",
+        "text": "=Approval request: {{ $('Parse Human Decision').item.json.approval_request_id }}\\nDecision: {{ $('Parse Human Decision').item.json.decision }}\\nCustomer notification: Not sent — last customer message timestamp is unavailable, so the 24-hour window could not be verified. Decision has been saved.",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        -240
+      ],
+      "id": "ee037847-05fe-485d-9249-368e8d5bbf7c",
+      "name": "Slack - Confirm Resolution (Not Sent)",
+      "credentials": {
+        "slackApi": {
+          "id": "uEiDQinmVMw0tEvP",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d491ef50-63a4-4b4c-9136-2d8323cb39a2",
+              "leftValue": "={{ !$json.bot_id && !$json.bot_profile }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "044277a5-8b7b-4f67-a2b5-482b13ed6fe0",
+              "leftValue": "={{ /approve|reject/i.test($json.text || '') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        -1088,
+        -416
+      ],
+      "id": "67674e00-4191-49ba-9357-ea4755bb0e54",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CUSTOMER_NAME: {{ $('Get Lead').first().json.lead_name || 'unknown' }}\nCUSTOMER_QUESTION: {{ $('Get Approval Request').first().json.customer_message || '' }}\nPROPERTY: {{ $('Get Approval Request').first().json.property_name || 'not specified' }}\nDECISION: {{ $('Parse Human Decision').first().json.decision }}\nTEAM_NOTE: {{ $('Parse Human Decision').first().json.human_instruction || '(none)' }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are the WhatsApp assistant of a real estate agency. The customer asked a question and you checked it with the property team. Write the message to send to the customer now.\n\nRules:\n- Speak directly to the customer (\"you\"), in your own words. Never copy the team note word for word and never say \"inform the lead\" or \"the customer\".\n- Use ONLY facts in TEAM_NOTE. Never invent details, prices, dates or policies.\n- If DECISION is APPROVED and TEAM_NOTE is empty, say the team confirmed it, without adding details.\n- If DECISION is REJECTED, say kindly that it is not possible (give the reason only if TEAM_NOTE has one) and offer to help with alternatives.\n- Fix typos and soften harsh wording from the team note.\n- 1 to 3 short sentences, warm and professional, at most one emoji. Use the customer's first name if it is known.\n- Do not mention approvals, Slack, systems, ids, scores or any internal process. Do not offer an appointment unless TEAM_NOTE mentions one.\n- Output only the message text."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        784,
+        -144
+      ],
+      "id": "867b970a-82e9-4480-a5e3-c36a563b75ff",
+      "name": "Rewrite in Agent Voice",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Build Customer Response').first().json;   // template message = safe fallback\nconst ai = String($json.text || $json.output || '').trim();\nconst banned = /approval|slack|supabase|\\bHOT\\b|\\bWARM\\b|\\bCOLD\\b|lead score|request id/i;\nconst ok = ai.length >= 8 && ai.length <= 800 && !banned.test(ai);\nreturn [{ json: { ...base, customer_message: ok ? ai : base.customer_message, message_source: ok ? 'agent_rewrite' : 'template_fallback' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        -144
+      ],
+      "id": "f60d0311-6ab2-4072-805a-656304885053",
+      "name": "Pick Final Message"
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        704,
+        64
+      ],
+      "id": "a0e47d07-6d05-4bc4-88b1-8e606dded60d",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "kBhs3KxBXrgQYiYk",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive Approval Decision": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Human Decision": {
+      "main": [
+        [
+          {
+            "node": "Valid Format?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Format?": {
+      "main": [
+        [
+          {
+            "node": "Get Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Malformed Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Approval Request": {
+      "main": [
+        [
+          {
+            "node": "Request Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Found?": {
+      "main": [
+        [
+          {
+            "node": "Claim & Store Decision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Request Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim & Store Decision": {
+      "main": [
+        [
+          {
+            "node": "Claim Successful?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Successful?": {
+      "main": [
+        [
+          {
+            "node": "Get Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Already Resolved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Lead": {
+      "main": [
+        [
+          {
+            "node": "Lead Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Found?": {
+      "main": [
+        [
+          {
+            "node": "Calculate 24h Window",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack - Lead Missing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate 24h Window": {
+      "main": [
+        [
+          {
+            "node": "Build Customer Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Customer Response": {
+      "main": [
+        [
+          {
+            "node": "Rewrite in Agent Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Window Status": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp - Send Free-form",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WhatsApp - Send Approved Template",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Not Sent (Unknown Window)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp - Send Free-form": {
+      "main": [
+        [
+          {
+            "node": "Update Approval Request (Sent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp - Send Approved Template": {
+      "main": [
+        [
+          {
+            "node": "Update Approval Request (Sent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Not Sent (Unknown Window)": {
+      "main": [
+        [
+          {
+            "node": "Update Approval Request (Skipped)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Approval Request (Sent)": {
+      "main": [
+        [
+          {
+            "node": "Slack - Confirm Resolution (Sent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Approval Request (Skipped)": {
+      "main": [
+        [
+          {
+            "node": "Slack - Confirm Resolution (Not Sent)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Parse Human Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rewrite in Agent Voice": {
+      "main": [
+        [
+          {
+            "node": "Pick Final Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Rewrite in Agent Voice",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Final Message": {
+      "main": [
+        [
+          {
+            "node": "Route by Window Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0cf7ec37-5908-4ac9-b102-9fa79fc82fbf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2366a041569ff34fcf12a0a2092fd4e7c08697b8afa808acfe3b171961f16201"
+  },
+  "nodeGroups": [],
+  "id": "jZGOckI5Ch3AYe6Q",
+  "tags": []
+}

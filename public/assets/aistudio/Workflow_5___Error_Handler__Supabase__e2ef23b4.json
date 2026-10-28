@@ -1,0 +1,123 @@
+{
+  "name": "Workflow 5 — Error Handler (Supabase)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "2367fbb6-faa5-4e08-bddc-716763266902",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.item.json.execution.error;\nconst wfName = $input.item.json.workflow.name;\nconst execId = $input.item.json.execution.id;\n\nlet severity = '🔴 CRITICAL';\nif (err.message && err.message.toLowerCase().includes('duplicate')) {\n  severity = '🔵 INFO';\n} else if (err.message && err.message.toLowerCase().includes('timeout')) {\n  severity = '🟡 WARNING';\n}\n\nreturn [{\n  json: {\n    workflow_name: wfName,\n    execution_id: execId,\n    error_message: err.message || 'Unknown error',\n    error_stack: err.stack || '',\n    severity: severity,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "75d13d25-1f8a-4bd6-804b-10efcf0658b7",
+      "name": "Format Error Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "={{ $json.severity }} *Workflow Error*\n\n*Workflow:* {{ $json.workflow_name }}\n*Execution ID:* {{ $json.execution_id }}\n\n*Error:*\n```\n{{ $json.error_message }}\n```",
+        "otherOptions": {}
+      },
+      "id": "cd0cfeb6-3750-41e5-88c6-322361c7ef17",
+      "name": "Slack Error Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        -96
+      ],
+      "webhookId": "383e05e4-34e4-48c3-adc0-f9e19e23f397",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "error_logs"
+      },
+      "id": "28c39896-862c-4152-965d-9d9e5fc040b8",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        128,
+        -96
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Details": {
+      "main": [
+        [
+          {
+            "node": "Slack Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Error Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "0f50cff0-298e-4669-b4af-e055b8594b9a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5c61937d3a06f8d1b588b37993e462b4c3ffefd57c94a4efa663c39b94cefdc2"
+  },
+  "id": "7693Gb-yB-2eCh3dzqA8j",
+  "tags": []
+}

@@ -1,0 +1,1242 @@
+{
+  "name": "Workflow 1 — Lead Intake Pipeline (Supabase)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b49958e8-71b9-43d2-8ced-774bc13c112f",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "867bf054-5d27-4844-8335-6db371e5c9f9",
+      "name": "Webhook — Lead Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1664,
+        352
+      ],
+      "webhookId": "b49958e8-71b9-43d2-8ced-774bc13c112f",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const fields = $input.item.json.body.data.fields;\n\n// ── Step 1: Helper functions ──────────────────────────────────────\n\n// Resolve dropdown option ID → label text\nfunction getDropdownText(field) {\n  if (!field || !field.value || !field.value[0]) return '';\n  const selectedId = Array.isArray(field.value)\n    ? field.value[0]\n    : field.value;\n  const match = field.options?.find(o => o.id === selectedId);\n  return match ? match.text.trim() : '';\n}\n\n// Get plain text value safely\nfunction getText(field) {\n  if (!field) return '';\n  if (Array.isArray(field.value)) return (field.value[0] ?? '').toString().trim();\n  return (field.value ?? '').toString().trim();\n}\n\n// Parse budget label → numeric lower bound\n// Handles: \"1L above\", \"30k - 50k\", \"20k - 30k\", \"50K-1L\"\nfunction parseBudget(label) {\n  if (!label) return 0;\n\n  const s = label.toLowerCase()\n    .replace(/[₹$,\\s]/g, '')\n    .replace(/above|plus|\\+/g, '')\n    .trim();\n\n  function expand(str) {\n    if (!str) return 0;\n    str = str.trim();\n    if (str.includes('l')) {\n      return parseFloat(str.replace('l', '')) * 100000;\n    }\n    if (str.includes('k')) {\n      return parseFloat(str.replace('k', '')) * 1000;\n    }\n    return parseFloat(str) || 0;\n  }\n\n  const parts = s.split('-');\n  return expand(parts[0]);\n}\n\n// ── Step 2: Map fields by label ───────────────────────────────────\n\nconst fieldMap = {};\nfields.forEach(f => {\n  if (f.label) fieldMap[f.label] = f;  // skip null labels (checkbox)\n});\n\n// ── Step 3: Extract raw values ────────────────────────────────────\n\nconst raw = {\n  source:       'tally',\n  first_name:   getText(fieldMap['First name']),\n  last_name:    getText(fieldMap['Last name']),\n  email:        getText(fieldMap['Email']),\n  job_title:    getText(fieldMap['Job title']),\n  company:      getText(fieldMap['Company name']),\n  company_size: getDropdownText(fieldMap['Company size']),\n  budget_label: getDropdownText(fieldMap['Budget']),\n  message:      getText(fieldMap['Message']),\n  newsletter:   fieldMap['Checkbox'] ? true : false,\n};\n\n// ── Step 4: Clean and validate ────────────────────────────────────\n\nconst email     = (raw.email      || '').toLowerCase().trim();\nconst firstName = (raw.first_name || '').trim();\nconst lastName  = (raw.last_name  || '').trim();\nconst company   = (raw.company    || '').trim();\nconst jobTitle  = (raw.job_title  || '').trim();\nconst message   = (raw.message    || '').trim();\nconst budget    = parseBudget(raw.budget_label);\n\n// Email validation — stops workflow if invalid\nconst emailValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);\nif (!emailValid) {\n  throw new Error(`Invalid or missing email: \"${email}\"`);\n}\n\n// ── Step 5: Return clean output ───────────────────────────────────\n\nreturn [{\n  json: {\n    // Identity\n    source:        raw.source,\n    first_name:    firstName,\n    last_name:     lastName,\n    full_name:     `${firstName} ${lastName}`.trim(),\n    email:         email,\n    phone:         '',              // not collected in your form\n\n    // Professional\n    job_title:     jobTitle,\n    company:       company,\n    company_size:  raw.company_size,  // \"1-10\", \"100-1000\" etc\n\n    // Budget\n    budget_label:  raw.budget_label,  // \"1L above\", \"30k - 50k\" etc\n    budget:        budget,            // 100000, 30000 etc\n\n    // Message\n    message:       message,\n\n    // Meta\n    // Replace this:\nnormalised_at: new Date().toISOString(),\n\n// With this:\nnormalised_at: new Date().toLocaleString('en-IN', { \n  timeZone: 'Asia/Kolkata',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n  hour: '2-digit',\n  minute: '2-digit',\n  second: '2-digit',\n  hour12: false\n}),\n\n    // Flags\n    has_company:   company.length > 0,\n    has_budget:    budget > 0,\n  }\n}];"
+      },
+      "id": "8037a41b-50d3-43a7-891a-8dd5f6c99e54",
+      "name": "Normalise Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1456,
+        480
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg",
+          "mode": "list",
+          "cachedResultName": "Intake details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1892694424,
+          "mode": "list",
+          "cachedResultName": "Lead Masters",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit#gid=1892694424"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "email",
+              "lookupValue": "={{ $json.email }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0179bbf7-b4fe-4114-a781-68688355d011",
+      "name": "Dedup — Check Existing Email",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -1216,
+        352
+      ],
+      "alwaysOutputData": true,
+      "disabled": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "4f20ae46-de7b-405a-9daa-783b81fabe07",
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "73a1ee04-048d-46fd-b3d2-cc32ca0f1455",
+      "name": "Is New Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        352
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n                   \"status\": \"duplicate\",\n                   \"message\": \"This email has already been submitted\"\n                 }",
+        "options": {
+          "responseCode": 409
+        }
+      },
+      "id": "7562c3d2-5da1-4f51-ba08-03d0228a6a52",
+      "name": "Respond — Duplicate",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        448
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get normalised lead data from Normalise Payload node\nconst lead = $('Normalise Payload').item.json;\n\nlet score = 0;\nconst reasons = [];\n\n// ── 1. Budget Score (0–40 pts) ────────────────────────\n// Using your actual Tally budget options\nconst budget = lead.budget || 0;\n\nif      (budget >= 100000) { score += 40; reasons.push('budget:high');    }\nelse if (budget >= 50000)  { score += 25; reasons.push('budget:mid');     }\nelse if (budget >= 30000)  { score += 15; reasons.push('budget:low');     }\nelse if (budget >= 20000)  { score += 5;  reasons.push('budget:minimal'); }\nelse                       { score += 0;  reasons.push('budget:none');    }\n\n// ── 2. Company Size Score (0–35 pts) ──────────────────\n// Using your actual Tally dropdown options:\n// \"1-10\", \"10-100\", \"100-1000\", \"1000+\"\nconst companySize = (lead.company_size || '').toLowerCase();\n\n    // Replace the company size section with this:\nif      (companySize === '1000 +')   { score += 35; reasons.push('size:enterprise');  }\nelse if (companySize === '100-1000') { score += 20; reasons.push('size:mid-market'); }\nelse if (companySize === '10-100')   { score += 10; reasons.push('size:smb');        }\nelse if (companySize === '1-10')     { score += 3;  reasons.push('size:micro');      }\nelse                                 { score += 0;  reasons.push('size:unknown');    }                          \n\n// ── 3. Job Title Seniority Score (0–25 pts) ───────────\nconst title = (lead.job_title || '').toLowerCase();\n\nif      (/ceo|cto|coo|founder|owner|president/.test(title)) { score += 25; reasons.push('seniority:c-suite');    }\nelse if (/vp|vice president|director/.test(title))          { score += 20; reasons.push('seniority:vp');         }\nelse if (/manager|lead|head/.test(title))                   { score += 15; reasons.push('seniority:manager');    }\nelse if (/engineer|developer|analyst|designer/.test(title)) { score += 8;  reasons.push('seniority:ic');         }\nelse if (/intern|trainee|junior/.test(title))               { score += 2;  reasons.push('seniority:junior');     }\nelse                                                         { score += 5;  reasons.push('seniority:other');      }\n\n// ── 4. Determine Tier ─────────────────────────────────\nlet tier;\nif      (score >= 70) tier = 'high';\nelse if (score >= 40) tier = 'mid';\nelse                  tier = 'low';\n\n// ── 5. Return scored lead ─────────────────────────────\nreturn [{\n  json: {\n    // All original lead fields\n    source:        lead.source,\n    first_name:    lead.first_name,\n    last_name:     lead.last_name,\n    full_name:     lead.full_name,\n    email:         lead.email,\n    phone:         lead.phone,\n    job_title:     lead.job_title,\n    company:       lead.company,\n    company_size:  lead.company_size,\n    budget_label:  lead.budget_label,\n    budget:        lead.budget,\n    message:       lead.message,\n    normalised_at: lead.normalised_at,\n\n    // Enrichment placeholders (empty for now — Apollo skipped)\n    enriched_industry:   '',\n    enriched_employees:  '',\n    enriched_linkedin:   '',\n\n    // Scoring results\n    lead_score:    score,\n    lead_tier:     tier,\n    score_reasons: reasons.join(', '),\n    scored_at:     new Date().toISOString(),\n  }\n}];"
+      },
+      "id": "41c5748e-4a9c-45cf-ab20-488d3357ba65",
+      "name": "Lead Scoring Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        256
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg",
+          "mode": "list",
+          "cachedResultName": "Intake details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1892694424,
+          "mode": "list",
+          "cachedResultName": "Lead Masters",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit#gid=1892694424"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $now.toISO() }}",
+            "source": "={{ $json.source }}",
+            "full_name": "={{ $json.full_name }}",
+            "email": "={{ $json.email }}",
+            "phone": "={{ $json.phone }}",
+            "job_title": "={{ $json.job_title }}",
+            "company": "={{ $json.company }}",
+            "company_size": "={{ $json.company_size }}",
+            "budget_label": "={{ $json.budget_label }}",
+            "budget": "={{ $json.budget }}",
+            "lead_score": "={{ $json.lead_score }}",
+            "lead_tier": "={{ $json.lead_tier }}",
+            "score_reasons": "={{ $json.score_reasons }}",
+            "follow_up_count": "0",
+            "status": "new"
+          },
+          "matchingColumns": [
+            "email"
+          ],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "job_title",
+              "displayName": "job_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_size",
+              "displayName": "company_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "industry",
+              "displayName": "industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employees",
+              "displayName": "employees",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "budget_label",
+              "displayName": "budget_label",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin",
+              "displayName": "linkedin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lead_tier",
+              "displayName": "lead_tier",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score_reasons",
+              "displayName": "score_reasons",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "follow_up_count",
+              "displayName": "follow_up_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_contacted",
+              "displayName": "last_contacted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "next_followup_date",
+              "displayName": "next_followup_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "8e9f2bc3-a56a-414d-b7c1-3dc32b90c6ae",
+      "name": "Append to Master Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -544,
+        256
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lead_tier }}",
+                    "rightValue": "high",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0b0600c0-fb97-47f3-9d38-c8e36860d517"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "High"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lead_tier }}",
+                    "rightValue": "mid",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "87931eae-b860-4c8a-a538-c52afe7267d2"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mid"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lead_tier }}",
+                    "rightValue": "low",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "6f7bc9aa-60c3-4ad4-989f-b476e71c2e28"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Low"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d5570059-63a9-4ae0-83a4-4d8e96ebfdcb",
+      "name": "Route by Tier",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -320,
+        336
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=Welcome, {{ $json.first_name }} — Here's what we prepared for you",
+        "message": "=<p>Hi {{ $json.first_name }},</p>\n<p>Thank you for reaching out. Given your role at <strong>{{ $json.enriched_company_name }}</strong> and your project scope, we've assigned a dedicated account executive to your inquiry.</p>\n<p>Expect a personal call within 24 hours. In the meantime, here is our enterprise overview deck: <a href=\"YOUR_DECK_LINK\">View Deck</a></p>\n<p>Best,<br>The Team</p>",
+        "options": {}
+      },
+      "id": "87b3c619-3c83-4e66-846f-5769ec46d3f7",
+      "name": "Email — VIP Welcome (High)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "10b75c37-8867-4335-b7de-564dadd00e7e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "=🔥 *HIGH PRIORITY LEAD* — Score: {{ $json.lead_score }}/100\n\n*{{ $json.full_name }}*\n💼 {{ $json.job_title }} at {{ $json.company }}\n📧 {{ $json.email }}\n🏢 Company size: {{ $json.company_size }}\n💰 Budget: {{ $json.budget_label }}\n🎯 Tier: {{ $json.lead_tier }}\n📊 Score: {{ $json.score_reasons }}\n📅 Submitted: {{ $json.normalised_at }}\n\nAssign this lead immediately!",
+        "otherOptions": {}
+      },
+      "id": "406b1928-47ca-43ba-8f39-c5fe13ec283c",
+      "name": "Slack — Sales Alert (High)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        -96,
+        256
+      ],
+      "webhookId": "07cf61e2-0950-4989-b5a3-bceba73a3338",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.full_name }}, here are resources to help your decision",
+        "message": "=<p>Hi {{ $json.full_name }},</p>\n<p>Thanks for your interest. We've put together some resources specifically.</p>\n<ul>\n  <li><a href=\"YOUR_CASE_STUDY_LINK\">Case study: How similar companies scaled with us</a></li>\n  <li><a href=\"YOUR_PRICING_LINK\">Transparent pricing breakdown</a></li>\n  <li><a href=\"YOUR_DEMO_LINK\">Book a 20-min demo</a></li>\n</ul>\n<p>Reply to this email with any questions.<br>The Team</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "40c00e6e-67fd-4fae-a035-9490df5c868b",
+      "name": "Email — Nurture Start (Mid)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -96,
+        448
+      ],
+      "webhookId": "201d1ee7-da4a-4f2c-99d3-98ef12fd58c8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=Quick question, {{ $json.first_name }}",
+        "message": "=<p>Hi {{ $json.first_name }},</p>\n<p>We noticed you explored our services recently. We'd love to understand your timeline better — are you actively looking for a solution in the next 3–6 months?</p>\n<p>Just reply with a quick yes/no and we'll tailor our outreach accordingly.</p>\n<p>Thanks,<br>The Team</p>",
+        "options": {}
+      },
+      "id": "72d3a4e7-79fd-40c5-b9e4-425fd7374c16",
+      "name": "Email — Cold Touch (Low)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -96,
+        640
+      ],
+      "webhookId": "04ae7544-1093-4d79-adb9-c8bf0fc66fe1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"success\", \"message\": \"Lead received and processed\" }",
+        "options": {}
+      },
+      "id": "abfc821e-b891-4f29-a5e1-86a82bd42be9",
+      "name": "Respond — Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        144
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead/intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a814519c-d86f-4995-b9c5-0fc5e5c966d3",
+      "name": "Webhook — Lead Intake2",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1680,
+        1184
+      ],
+      "webhookId": "5d3bd670-35d3-40b6-a2a6-049c084a152e"
+    },
+    {
+      "parameters": {
+        "jsCode": "const fields = $input.item.json.body.data.fields;\nfunction getDropdownText(field) { if (!field || !field.value || !field.value[0]) return ''; const selectedId = Array.isArray(field.value) ? field.value[0] : field.value; const match = field.options?.find(o => o.id === selectedId); return match ? match.text.trim() : ''; }\nfunction getText(field) { if (!field) return ''; if (Array.isArray(field.value)) return (field.value[0] ?? '').toString().trim(); return (field.value ?? '').toString().trim(); }\nfunction parseBudget(label) { if (!label) return 0; const s = label.toLowerCase().replace(/[₹$,\\s]/g, '').replace(/above|plus|\\+/g, '').trim(); function expand(str) { if (!str) return 0; str = str.trim(); if (str.includes('l')) { return parseFloat(str.replace('l', '')) * 100000; } if (str.includes('k')) { return parseFloat(str.replace('k', '')) * 1000; } return parseFloat(str) || 0; } const parts = s.split('-'); return expand(parts[0]); }\nconst fieldMap = {}; fields.forEach(f => { if (f.label) fieldMap[f.label] = f; });\nconst raw = { source: 'tally', first_name: getText(fieldMap['First name']), last_name: getText(fieldMap['Last name']), email: getText(fieldMap['Email']), job_title: getText(fieldMap['Job title']), company: getText(fieldMap['Company name']), company_size: getDropdownText(fieldMap['Company size']), budget_label: getDropdownText(fieldMap['Budget']), message: getText(fieldMap['Message']) };\nconst email = (raw.email || '').toLowerCase().trim(); const firstName = (raw.first_name || '').trim(); const lastName = (raw.last_name || '').trim(); const company = (raw.company || '').trim(); const jobTitle = (raw.job_title || '').trim(); const message = (raw.message || '').trim(); const budget = parseBudget(raw.budget_label);\nconst emailValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email); if (!emailValid) { throw new Error(`Invalid or missing email: \"${email}\"`); }\nreturn [{ json: { source: raw.source, first_name: firstName, last_name: lastName, full_name: `${firstName} ${lastName}`.trim(), email: email, phone: '', job_title: jobTitle, company: company, company_size: raw.company_size, budget_label: raw.budget_label, budget: budget, message: message, normalised_at: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }), has_company: company.length > 0, has_budget: budget > 0 } }];"
+      },
+      "id": "d8644388-23dc-49f6-b1b4-eced20c457fe",
+      "name": "Normalise Payload1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1376,
+        1328
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $json.email }}"
+            }
+          ]
+        }
+      },
+      "id": "d6b0badd-50ec-4b06-ac15-72f0019856c2",
+      "name": "Dedup — Check Existing Email1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1152,
+        1184
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "4f20ae46-de7b-405a-9daa-783b81fabe07",
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6fea1bae-71b5-47a8-88de-f4434fcc2eae",
+      "name": "Is New Lead?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        1184
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n                   \"status\": \"duplicate\",\n                   \"message\": \"This email has already been submitted\"\n                 }",
+        "options": {
+          "responseCode": 409
+        }
+      },
+      "id": "4c2d8618-a4aa-41bf-99f1-7a10ab228f4f",
+      "name": "Respond — Duplicate1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -752,
+        1376
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $('Normalise Payload1').item.json;\nlet score = 0; const reasons = [];\nconst budget = lead.budget || 0;\nif (budget >= 100000) { score += 40; reasons.push('budget:high'); }\nelse if (budget >= 50000) { score += 25; reasons.push('budget:mid'); }\nelse if (budget >= 30000) { score += 15; reasons.push('budget:low'); }\nelse if (budget >= 20000) { score += 5; reasons.push('budget:minimal'); }\nelse { score += 0; reasons.push('budget:none'); }\nconst companySize = (lead.company_size || '').toLowerCase();\nif (companySize === '1000 +') { score += 35; reasons.push('size:enterprise'); }\nelse if (companySize === '100-1000') { score += 20; reasons.push('size:mid-market'); }\nelse if (companySize === '10-100') { score += 10; reasons.push('size:smb'); }\nelse if (companySize === '1-10') { score += 3; reasons.push('size:micro'); }\nelse { score += 0; reasons.push('size:unknown'); }\nconst title = (lead.job_title || '').toLowerCase();\nif (/ceo|cto|coo|founder|owner|president/.test(title)) { score += 25; reasons.push('seniority:c-suite'); }\nelse if (/vp|vice president|director/.test(title)) { score += 20; reasons.push('seniority:vp'); }\nelse if (/manager|lead|head/.test(title)) { score += 15; reasons.push('seniority:manager'); }\nelse if (/engineer|developer|analyst|designer/.test(title)) { score += 8; reasons.push('seniority:ic'); }\nelse if (/intern|trainee|junior/.test(title)) { score += 2; reasons.push('seniority:junior'); }\nelse { score += 5; reasons.push('seniority:other'); }\nlet tier;\nif (score >= 70) tier = 'high';\nelse if (score >= 40) tier = 'mid';\nelse tier = 'low';\nreturn [{ json: { source: lead.source, first_name: lead.first_name, last_name: lead.last_name, full_name: lead.full_name, email: lead.email, phone: lead.phone, job_title: lead.job_title, company: lead.company, company_size: lead.company_size, budget_label: lead.budget_label, budget: lead.budget, message: lead.message, normalised_at: lead.normalised_at, enriched_industry: '', enriched_employees: '', enriched_linkedin: '', lead_score: score, lead_tier: tier, score_reasons: reasons.join(', '), status: 'new', follow_up_count: 0 } }];"
+      },
+      "id": "84296401-97af-4cef-a29f-610d7f689b10",
+      "name": "Lead Scoring Engine1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        1088
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $('Webhook — Lead Intake2').item.json.body.createdAt }}"
+            },
+            {
+              "fieldId": "full_name",
+              "fieldValue": "={{ $json.full_name }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $json.email }}"
+            },
+            {
+              "fieldId": "job_title",
+              "fieldValue": "={{ $json.job_title }}"
+            },
+            {
+              "fieldId": "company",
+              "fieldValue": "={{ $json.company }}"
+            },
+            {
+              "fieldId": "budget_label",
+              "fieldValue": "={{ $json.budget_label }}"
+            },
+            {
+              "fieldId": "budget",
+              "fieldValue": "={{ $json.budget }}"
+            },
+            {
+              "fieldId": "lead_score",
+              "fieldValue": "={{ $json.lead_score }}"
+            },
+            {
+              "fieldId": "lead_tier",
+              "fieldValue": "={{ $json.lead_tier }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.status }}"
+            },
+            {
+              "fieldId": "follow_up_count",
+              "fieldValue": "={{ $json.follow_up_count }}"
+            }
+          ]
+        }
+      },
+      "id": "96e48118-09af-4df3-a1ee-81a677da379f",
+      "name": "Append to Master Sheet1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        1088
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n                   \"status\": \"success\",\n                   \"message\": \"Lead successfully captured\"\n                 }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "7e9851f4-e2fa-42e1-bd37-1a686965e23d",
+      "name": "Respond — Success1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -352,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lead_tier }}",
+                    "rightValue": "high",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "High"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lead_tier }}",
+                    "rightValue": "mid",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mid"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.lead_tier }}",
+                    "rightValue": "low",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Low"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f259c4e2-6f66-4412-934e-06b44323e16b",
+      "name": "Route by Tier1",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        -352,
+        1184
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=Welcome, {{ $json.first_name }} — Here's what we prepared for you",
+        "message": "=<p>Hi {{ $json.first_name }},</p><p>Thank you for reaching out. Given your role at <strong>{{ $json.company }}</strong> and your project scope, we've assigned a dedicated account executive to your inquiry.</p><p>Expect a personal call within 24 hours. In the meantime, here is our enterprise overview deck: <a href=\"YOUR_DECK_LINK\">View Deck</a></p><p>Best,<br>The Team</p>",
+        "options": {}
+      },
+      "id": "63ff2cf3-ba8a-48e3-942f-03537d5c543c",
+      "name": "Email — VIP Welcome (High)1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        880
+      ],
+      "webhookId": "398317e5-d44f-45ed-b7b9-d23f7ebb5202",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "=🔥 *HIGH PRIORITY LEAD* — Score: {{ $json.lead_score }}/100\n\n*{{ $json.full_name }}*\n💼 {{ $json.job_title }} at {{ $json.company }}\n📧 {{ $json.email }}\n🏢 Company size: {{ $json.company_size }}\n💰 Budget: {{ $json.budget_label }}\n🎯 Tier: {{ $json.lead_tier }}\n📊 Score: {{ $json.score_reasons }}\n\nAssign this lead immediately!",
+        "otherOptions": {}
+      },
+      "id": "3f4b7129-663d-4331-a555-7cead96c31c0",
+      "name": "Slack — Sales Alert (High)1",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        -32,
+        1104
+      ],
+      "webhookId": "7700b01a-d9c9-41d4-aed4-7e301bd475c6",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.full_name }}, here are resources to help your decision",
+        "message": "=<p>Hi {{ $json.full_name }},</p><p>Thanks for your interest. We've put together some resources specifically.</p><ul><li><a href=\"YOUR_CASE_STUDY_LINK\">Case study: How similar companies scaled with us</a></li><li><a href=\"YOUR_PRICING_LINK\">Transparent pricing breakdown</a></li><li><a href=\"YOUR_DEMO_LINK\">Book a 20-min demo</a></li></ul><p>Reply to this email with any questions.<br>The Team</p>",
+        "options": {}
+      },
+      "id": "0ac79b9a-c7ed-4ff3-a335-8d566fcef558",
+      "name": "Email — Nurture Start (Mid)1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -48,
+        1280
+      ],
+      "webhookId": "5dab6219-ba4f-4c00-913f-04727af1080a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=Quick question, {{ $json.first_name }}",
+        "message": "=<p>Hi {{ $json.first_name }},</p><p>We noticed you explored our services recently. We'd love to understand your timeline better — are you actively looking for a solution in the next 3–6 months?</p><p>Just reply with a quick yes/no and we'll tailor our outreach accordingly.</p><p>Thanks,<br>The Team</p>",
+        "options": {}
+      },
+      "id": "6ef0068e-6f98-4c4a-bfa2-d7d2e43123e0",
+      "name": "Email — Cold Touch (Low)1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -48,
+        1488
+      ],
+      "webhookId": "c5756440-c24d-48e2-81b2-223f0f9fe023",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "raw_submissions",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $json.body.data.fields[2].value }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1360,
+        1024
+      ],
+      "id": "51617060-2505-414c-808d-a7671d4a9f1b",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook — Lead Intake": {
+      "main": [
+        [
+          {
+            "node": "Normalise Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise Payload": {
+      "main": [
+        [
+          {
+            "node": "Dedup — Check Existing Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup — Check Existing Email": {
+      "main": [
+        [
+          {
+            "node": "Is New Lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is New Lead?": {
+      "main": [
+        [
+          {
+            "node": "Lead Scoring Engine",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond — Duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Scoring Engine": {
+      "main": [
+        [
+          {
+            "node": "Append to Master Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Master Sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond — Success",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route by Tier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Tier": {
+      "main": [
+        [
+          {
+            "node": "Email — VIP Welcome (High)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack — Sales Alert (High)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email — Nurture Start (Mid)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email — Cold Touch (Low)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook — Lead Intake2": {
+      "main": [
+        [
+          {
+            "node": "Normalise Payload1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise Payload1": {
+      "main": [
+        [
+          {
+            "node": "Dedup — Check Existing Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup — Check Existing Email1": {
+      "main": [
+        [
+          {
+            "node": "Is New Lead?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is New Lead?1": {
+      "main": [
+        [
+          {
+            "node": "Lead Scoring Engine1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond — Duplicate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Scoring Engine1": {
+      "main": [
+        [
+          {
+            "node": "Append to Master Sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Master Sheet1": {
+      "main": [
+        [
+          {
+            "node": "Route by Tier1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond — Success1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Tier1": {
+      "main": [
+        [
+          {
+            "node": "Email — VIP Welcome (High)1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack — Sales Alert (High)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email — Nurture Start (Mid)1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email — Cold Touch (Low)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "7693Gb-yB-2eCh3dzqA8j"
+  },
+  "versionId": "d9d15583-b4f7-4fef-a100-b6bcb74739ac",
+  "meta": {
+    "instanceId": "5c61937d3a06f8d1b588b37993e462b4c3ffefd57c94a4efa663c39b94cefdc2"
+  },
+  "id": "x1ajCwvAC0-Q9dvggD19S",
+  "tags": []
+}

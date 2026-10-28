@@ -1,0 +1,266 @@
+{
+  "name": "Workflow 3 — Daily Digest (Supabase)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "74b57632-9d3c-4b3f-b93c-5d15144c1c27",
+      "name": "Schedule — Daily Digest (8AM Weekdays)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg",
+          "mode": "list",
+          "cachedResultName": "Intake details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1892694424,
+          "mode": "list",
+          "cachedResultName": "Lead Masters",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit#gid=1892694424"
+        },
+        "options": {
+          "returnAllMatches": "returnAllMatches"
+        }
+      },
+      "id": "bcbb6538-9b07-48c4-8eb4-904db268599b",
+      "name": "Get All Leads for Digest",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        224,
+        0
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = $input.all().map(i => i.json);\n\n// Count by tier\nconst highLeads = leads.filter(l => l.lead_tier === 'high');\nconst midLeads  = leads.filter(l => l.lead_tier === 'mid');\nconst lowLeads  = leads.filter(l => l.lead_tier === 'low');\n\n// Count by status\nconst newLeads      = leads.filter(l => l.status === 'new');\nconst completed     = leads.filter(l => l.status === 'sequence_complete');\n\n// Average score\nconst avgScore = leads.length\n  ? (leads.reduce((sum, l) => sum + (parseFloat(l.lead_score) || 0), 0) / leads.length).toFixed(1)\n  : 0;\n\n// Today's leads\nconst today = new Date().toISOString().split('T')[0];\nconst todayLeads = leads.filter(l => \n  l.timestamp && l.timestamp.startsWith(today)\n);\n\n// Build Slack message\nconst message = `\n📊 *Daily Lead Digest — ${new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}*\n\n━━━━━━━━━━━━━━━━━━━━━\n📈 *Pipeline Summary*\n- Total leads: *${leads.length}*\n- New today: *${todayLeads.length}*\n- Avg lead score: *${avgScore}/100*\n\n🎯 *Tier Breakdown*\n- 🔥 High tier: *${highLeads.length}*\n- 🟡 Mid tier:  *${midLeads.length}*\n- 🔵 Low tier:  *${lowLeads.length}*\n\n📬 *Follow-up Status*\n- In sequence: *${newLeads.length}*\n- Completed:   *${completed.length}*\n\n${todayLeads.length > 0 \n  ? `*New leads today:*\\n` + todayLeads.map(l => \n    `  • ${l.full_name} — ${l.company} — Score: ${l.lead_score} [${l.lead_tier}]`\n  ).join('\\n')\n  : '📭 No new leads today'\n}\n━━━━━━━━━━━━━━━━━━━━━\n`.trim();\n\nreturn [{ json: { digest_message: message } }];"
+      },
+      "id": "a310fa43-78e4-4a99-a200-4599b7b13a8c",
+      "name": "Build Digest Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "={{ $json.digest_message }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "01686c74-30ac-4e21-b10e-b33c6adcc7c7",
+      "name": "Slack — Post Daily Digest",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        0
+      ],
+      "webhookId": "d32d446e-53c7-45a2-b7a5-739910d2f4e8",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "2135b790-0d3e-4123-bd0f-0b4af100c290",
+      "name": "Schedule Trigger (8AM Weekdays)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads"
+      },
+      "id": "db866636-8e40-41f2-b233-a35c254bc016",
+      "name": "Get All Leads",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        192,
+        240
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const leads = $input.all().map(i => i.json);\n\n// Count by tier\nconst highLeads = leads.filter(l => l.lead_tier === 'high');\nconst midLeads  = leads.filter(l => l.lead_tier === 'mid');\nconst lowLeads  = leads.filter(l => l.lead_tier === 'low');\n\n// Count by status\nconst newLeads      = leads.filter(l => l.status === 'new');\nconst completed     = leads.filter(l => l.status === 'sequence_complete');\n\n// Average score\nconst avgScore = leads.length\n  ? (leads.reduce((sum, l) => sum + (parseFloat(l.lead_score) || 0), 0) / leads.length).toFixed(1)\n  : 0;\n\n// Today's leads\nconst today = new Date().toISOString().split('T')[0];\nconst todayLeads = leads.filter(l => \n  l.timestamp && l.timestamp.startsWith(today)\n);\n\n// Build Slack message\nconst message = `\n📊 *Daily Lead Digest — ${new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}*\n\n━━━━━━━━━━━━━━━━━━━━━\n📈 *Pipeline Summary*\n- Total leads: *${leads.length}*\n- New today: *${todayLeads.length}*\n- Avg lead score: *${avgScore}/100*\n\n🎯 *Tier Breakdown*\n- 🔥 High tier: *${highLeads.length}*\n- 🟡 Mid tier:  *${midLeads.length}*\n- 🔵 Low tier:  *${lowLeads.length}*\n\n📬 *Follow-up Status*\n- In sequence: *${newLeads.length}*\n- Completed:   *${completed.length}*\n\n${todayLeads.length > 0 \n  ? `*New leads today:*\\n` + todayLeads.map(l => \n    `  • ${l.full_name} — ${l.company} — Score: ${l.lead_score} [${l.lead_tier}]`\n  ).join('\\n')\n  : '📭 No new leads today'\n}\n━━━━━━━━━━━━━━━━━━━━━\n`.trim();\n\nreturn [{ json: { digest_message: message } }];"
+      },
+      "id": "b983abac-a140-473b-a8d4-57432629e226",
+      "name": "Build Digest Summary1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "={{ $json.digest_message }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "b7c8c4bc-a028-477a-abd9-94e5e04f326b",
+      "name": "Slack — Post Daily Digest1",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        592,
+        240
+      ],
+      "webhookId": "94370ad5-eb04-4fe2-8184-eef2ebc5e2b2",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule — Daily Digest (8AM Weekdays)": {
+      "main": [
+        [
+          {
+            "node": "Get All Leads for Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Leads for Digest": {
+      "main": [
+        [
+          {
+            "node": "Build Digest Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Digest Summary": {
+      "main": [
+        [
+          {
+            "node": "Slack — Post Daily Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger (8AM Weekdays)": {
+      "main": [
+        [
+          {
+            "node": "Get All Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Leads": {
+      "main": [
+        [
+          {
+            "node": "Build Digest Summary1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Digest Summary1": {
+      "main": [
+        [
+          {
+            "node": "Slack — Post Daily Digest1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "7693Gb-yB-2eCh3dzqA8j"
+  },
+  "versionId": "57a1cd8f-4148-464e-8f22-432ec3acf196",
+  "meta": {
+    "instanceId": "5c61937d3a06f8d1b588b37993e462b4c3ffefd57c94a4efa663c39b94cefdc2"
+  },
+  "id": "rsKVeilRQyuV31rhqwTPT",
+  "tags": []
+}

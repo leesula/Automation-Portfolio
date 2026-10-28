@@ -1,0 +1,673 @@
+{
+  "name": "Workflow 9 — Cal.com Booking Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calcom/booking",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f7825627-930d-4f4c-aca9-78167d95d5b4",
+      "name": "Webhook — Cal.com",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1216,
+        -432
+      ],
+      "webhookId": "ba0821d3-f50c-4196-ad82-91c85a0ceb6c",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.item.json.body;\n\n// Cal.com typical payload structure for MEETING_CREATED\nconst attendeeEmail = payload.payload?.attendees?.[0]?.email || '';\nconst attendeeName = payload.payload?.attendees?.[0]?.name || '';\nconst startTime = payload.payload?.startTime || '';\nconst title = payload.payload?.title || 'Meeting';\n\nreturn [{\n  json: {\n    email: attendeeEmail.toLowerCase().trim(),\n    name: attendeeName,\n    start_time: startTime,\n    title: title,\n    raw_payload: payload\n  }\n}];"
+      },
+      "id": "8c39283e-41cf-487b-916b-e0cac0b6f759",
+      "name": "Parse Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        -432
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $json.email }}"
+            }
+          ]
+        }
+      },
+      "id": "b3c56de1-7951-4368-a7a7-402cd9bfdaac",
+      "name": "Check Lead Exists",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        -432
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "4f20ae46-de7b-405a-9daa-783b81fabe07",
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEqual"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ce2b246e-61aa-4661-9f6c-577883fbd6fd",
+      "name": "Does Lead Exist?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        -432
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $json.email }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "meeting_scheduled"
+            }
+          ]
+        }
+      },
+      "id": "54aeddfe-b733-4af7-b2e1-c559e1346921",
+      "name": "Update Status → meeting_scheduled",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        -544
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "=📅 *New Meeting Booked!*\n\n*Name:* {{ $('Parse Booking').item.json.name }}\n*Email:* {{ $('Parse Booking').item.json.email }}\n*Meeting:* {{ $('Parse Booking').item.json.title }}\n*Time:* {{ $('Parse Booking').item.json.start_time }}\n\n_Lead status automatically updated to 'meeting_scheduled'_",
+        "otherOptions": {}
+      },
+      "id": "198ab674-6070-48b0-9c6b-731693f51ebb",
+      "name": "Slack — Meeting Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        -544
+      ],
+      "webhookId": "c00fb8c2-9303-4114-b5c2-00328f9a50fc",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n                   \"status\": \"success\",\n                   \"message\": \"Webhook received\"\n                 }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "35c625bb-77f7-4846-b567-6454142c1e7b",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        -240
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"received\" }",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "d44df590-1e20-4260-9e3e-5af8c382e501",
+      "name": "Respond 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -1488,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Cal.com sends payload inside 'payload' key\nconst body = $input.item.json.body || $input.item.json;\nconst payload = body.payload || body;\n\n// ── Attendee details ──────────────────────────────────\nconst attendee      = (payload.attendees || [])[0] || {};\nconst attendeeEmail = (attendee.email || '').toLowerCase().trim();\nconst attendeeName  = (attendee.name  || '').trim();\nconst attendeeTz    = attendee.timeZone || attendee.timezone || 'UTC';\n\n// ── Booking details ───────────────────────────────────\nconst startTime    = payload.startTime    || '';\nconst endTime      = payload.endTime      || '';\nconst meetingTitle = payload.title        || payload.type || 'Meeting';\nconst calBookingId = payload.uid          || payload.bookingId || '';\n\n// ── Format for Slack display (IST) ───────────────────\nfunction formatTime(isoString, tz) {\n  if (!isoString) return 'N/A';\n  try {\n    return new Date(isoString).toLocaleString('en-IN', {\n      timeZone: tz || 'Asia/Kolkata',\n      weekday:  'short',\n      year:     'numeric',\n      month:    'short',\n      day:      'numeric',\n      hour:     '2-digit',\n      minute:   '2-digit',\n      hour12:   true\n    });\n  } catch(e) {\n    return isoString;\n  }\n}\n\nreturn [{\n  json: {\n    attendee_email:    attendeeEmail,\n    attendee_name:     attendeeName,\n    attendee_timezone: attendeeTz,\n    meeting_title:     meetingTitle,\n    start_time:        startTime,\n    end_time:          endTime,\n    cal_booking_id:    calBookingId,\n    formatted_start:   formatTime(startTime, attendeeTz),\n    formatted_end:     formatTime(endTime, attendeeTz)\n  }\n}];"
+      },
+      "id": "e5b940b6-4b5b-443a-8b07-4aaeb31ad991",
+      "name": "Parse Booking Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1264,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $json.attendee_email }}"
+            }
+          ]
+        }
+      },
+      "id": "d10de563-a547-4afb-8e4a-57cc7bc56b8a",
+      "name": "Find Lead by Email",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        64
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "lead-exists-check",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e383e0e8-e825-4183-b3d9-c53cb4b171bd",
+      "name": "Lead Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $('Parse Booking Payload').item.json.attendee_email }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "meeting_scheduled"
+            }
+          ]
+        }
+      },
+      "id": "21049000-ce6f-4e1b-9818-7e92088e7c5f",
+      "name": "Update Lead → meeting_scheduled",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        -64
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "meetings",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "lead_id",
+              "fieldValue": "={{ $('Find Lead by Email').item.json.id }}"
+            },
+            {
+              "fieldId": "attendee_name",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.attendee_name }}"
+            },
+            {
+              "fieldId": "attendee_email",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.attendee_email }}"
+            },
+            {
+              "fieldId": "attendee_timezone",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.attendee_timezone }}"
+            },
+            {
+              "fieldId": "meeting_title",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.meeting_title }}"
+            },
+            {
+              "fieldId": "start_time",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.start_time }}"
+            },
+            {
+              "fieldId": "end_time",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.end_time }}"
+            },
+            {
+              "fieldId": "cal_booking_id",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.cal_booking_id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "scheduled"
+            }
+          ]
+        }
+      },
+      "id": "a935a542-89ae-449f-a10a-478c246fcf3a",
+      "name": "Save Meeting (Known Lead)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        -64
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "=📅 *New Meeting Booked!*\n\n*Name:* {{ $('Parse Booking Payload').item.json.attendee_name }}\n*Email:* {{ $('Parse Booking Payload').item.json.attendee_email }}\n*Meeting:* {{ $('Parse Booking Payload').item.json.meeting_title }}\n\n🕐 *Starts:* {{ $('Parse Booking Payload').item.json.formatted_start }}\n🕐 *Ends:* {{ $('Parse Booking Payload').item.json.formatted_end }}\n🌍 *Timezone:* {{ $('Parse Booking Payload').item.json.attendee_timezone }}\n\n✅ _Lead status updated to 'meeting_scheduled'. Meeting saved to database._",
+        "otherOptions": {}
+      },
+      "id": "7df85c51-8fa3-4181-bb3c-bba4f512cb9c",
+      "name": "Slack — Meeting Booked (Known Lead)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        -176,
+        -64
+      ],
+      "webhookId": "a0fba30f-88d8-4a8a-943b-383f81d01563",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "meetings",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "lead_id",
+              "fieldValue": "={{ $('Find Lead by Email').item.json.id }}"
+            },
+            {
+              "fieldId": "attendee_name",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.attendee_name }}"
+            },
+            {
+              "fieldId": "attendee_email",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.attendee_email }}"
+            },
+            {
+              "fieldId": "attendee_timezone",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.attendee_timezone }}"
+            },
+            {
+              "fieldId": "meeting_title",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.meeting_title }}"
+            },
+            {
+              "fieldId": "start_time",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.start_time }}"
+            },
+            {
+              "fieldId": "end_time",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.end_time }}"
+            },
+            {
+              "fieldId": "cal_booking_id",
+              "fieldValue": "={{ $('Parse Booking Payload').item.json.cal_booking_id }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "scheduled"
+            }
+          ]
+        }
+      },
+      "id": "28b13a36-a2b0-40c0-984d-c62a03a8e456",
+      "name": "Save Meeting (New Person)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        176
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "=📅 *New Meeting Booked (Unknown Lead)* ⚠️\n\n*Name:* {{ $('Parse Booking Payload').item.json.attendee_name }}\n*Email:* {{ $('Parse Booking Payload').item.json.attendee_email }}\n*Meeting:* {{ $('Parse Booking Payload').item.json.meeting_title }}\n\n🕐 *Starts:* {{ $('Parse Booking Payload').item.json.formatted_start }}\n🕐 *Ends:* {{ $('Parse Booking Payload').item.json.formatted_end }}\n🌍 *Timezone:* {{ $('Parse Booking Payload').item.json.attendee_timezone }}\n\n⚠️ _This person is NOT in the leads database. Meeting saved with no lead link. Please review manually._",
+        "otherOptions": {}
+      },
+      "id": "efd78870-317c-4f5d-ba64-c30e90a83d5a",
+      "name": "Slack — Unknown Person Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        176
+      ],
+      "webhookId": "29f45280-1c73-485e-a36d-3b6d82b6fda5",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "calcom/booking",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "2c023cb1-c71f-4b01-9a88-b5c384c71821",
+      "name": "Webhook — Cal.com1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1488,
+        64
+      ],
+      "webhookId": "94447b58-3075-460a-adc0-153cd4f59746"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook — Cal.com": {
+      "main": [
+        [
+          {
+            "node": "Parse Booking",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Booking": {
+      "main": [
+        [
+          {
+            "node": "Check Lead Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Lead Exists": {
+      "main": [
+        [
+          {
+            "node": "Does Lead Exist?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does Lead Exist?": {
+      "main": [
+        [
+          {
+            "node": "Update Status → meeting_scheduled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status → meeting_scheduled": {
+      "main": [
+        [
+          {
+            "node": "Slack — Meeting Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Booking Payload": {
+      "main": [
+        [
+          {
+            "node": "Find Lead by Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Lead by Email": {
+      "main": [
+        [
+          {
+            "node": "Lead Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Exists?": {
+      "main": [
+        [
+          {
+            "node": "Update Lead → meeting_scheduled",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Meeting (New Person)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead → meeting_scheduled": {
+      "main": [
+        [
+          {
+            "node": "Save Meeting (Known Lead)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Meeting (Known Lead)": {
+      "main": [
+        [
+          {
+            "node": "Slack — Meeting Booked (Known Lead)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Meeting (New Person)": {
+      "main": [
+        [
+          {
+            "node": "Slack — Unknown Person Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook — Cal.com1": {
+      "main": [
+        [
+          {
+            "node": "Parse Booking Payload",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "7693Gb-yB-2eCh3dzqA8j"
+  },
+  "versionId": "81904a5a-e22c-4f0c-9440-a74722c1082a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5c61937d3a06f8d1b588b37993e462b4c3ffefd57c94a4efa663c39b94cefdc2"
+  },
+  "id": "WvwVVwcyUDUXI-UoSCaU7",
+  "tags": []
+}

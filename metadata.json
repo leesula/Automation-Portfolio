@@ -1,0 +1,6 @@
+{
+  "name": "AI Automation Builder Portfolio",
+  "description": "Professional portfolio for an AI Automation Builder specializing in n8n workflows, business process automations, lead qualification systems, and CRM integrations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

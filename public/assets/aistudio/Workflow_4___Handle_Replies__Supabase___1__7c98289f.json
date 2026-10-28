@@ -1,0 +1,688 @@
+{
+  "name": "Workflow 4 — Handle Replies (Supabase)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "q": "in:inbox"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        0
+      ],
+      "id": "3fc0534e-cc2d-4f79-91e0-11342435e2ba",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $input.item.json;\n\n// Extract from email\nconst fromRaw = message.From || message.from || '';\nconst emailMatch = fromRaw.match(/<(.+)>/);\nconst fromEmail = emailMatch\n  ? emailMatch[1].toLowerCase().trim()\n  : fromRaw.toLowerCase().trim();\n\n// Subject\nconst subject = message.Subject\n  || message.subject\n  || '';\n\n// Is reply\nconst isReply = subject.toLowerCase().startsWith('re:');\n\n// Decode HTML entities using a lookup table\nconst htmlEntities = {\n  '&amp;':  '&',\n  '&lt;':   '<',\n  '&gt;':   '>',\n  '&quot;': '\"',\n  '&#39;':  \"'\",\n  '&nbsp;': ' ',\n  '&#33;':  '!',\n  '&#34;':  '\"',\n  '&#35;':  '#',\n  '&#38;':  '&',\n};\n\nfunction decodeHtml(str) {\n  if (!str) return '';\n  // Replace named entities\n  let decoded = str.replace(\n    /&[a-zA-Z]+;|&#\\d+;/g,\n    match => htmlEntities[match] || match\n  );\n  // Replace numeric entities &#39; &#60; etc\n  decoded = decoded.replace(\n    /&#(\\d+);/g,\n    (match, num) => String.fromCharCode(parseInt(num, 10))\n  );\n  return decoded;\n}\n\n// Clean snippet\nconst rawSnippet = message.snippet || '';\n\n// Decode first\nlet cleanSnippet = decodeHtml(rawSnippet);\n\n// Remove quoted original email after \"On [date] wrote:\"\nconst onIndex = cleanSnippet.indexOf(' On ');\nif (onIndex !== -1) {\n  cleanSnippet = cleanSnippet.substring(0, onIndex).trim();\n}\n\n// Remove \"wrote:\" pattern\nconst wroteIndex = cleanSnippet.indexOf('wrote:');\nif (wroteIndex !== -1) {\n  cleanSnippet = cleanSnippet.substring(0, wroteIndex).trim();\n}\n\nreturn [{\n  json: {\n    reply_from:    fromEmail,\n    reply_subject: subject,\n    reply_snippet: cleanSnippet,\n    is_reply:      isReply,\n    received_at:   new Date().toLocaleString('en-IN', {\n      timeZone: 'Asia/Kolkata',\n      year:     'numeric',\n      month:    '2-digit',\n      day:      '2-digit',\n      hour:     '2-digit',\n      minute:   '2-digit',\n      second:   '2-digit',\n      hour12:   false\n    })\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        0
+      ],
+      "id": "2b319c20-5d79-4976-b1bb-7698a111c5db",
+      "name": "Code in JavaScript",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg",
+          "mode": "list",
+          "cachedResultName": "Intake details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1892694424,
+          "mode": "list",
+          "cachedResultName": "Lead Masters",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit#gid=1892694424"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "email",
+              "lookupValue": "={{ $json.reply_from }}"
+            }
+          ]
+        },
+        "options": {
+          "returnFirstMatch": false
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        256,
+        0
+      ],
+      "id": "5f83e4d9-dd39-41ba-83bf-8e1c5db1c7b7",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e7cf49cd-ea90-4094-85be-f2b468fa0b90",
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        480,
+        0
+      ],
+      "id": "2c63a34b-4854-4f59-9244-939952f234fb",
+      "name": "If",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg",
+          "mode": "list",
+          "cachedResultName": "Intake details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1892694424,
+          "mode": "list",
+          "cachedResultName": "Lead Masters",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit#gid=1892694424"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "email": "={{ $('Code in JavaScript').item.json.reply_from }}",
+            "status": "replied",
+            "last_contacted": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "email"
+          ],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_title",
+              "displayName": "job_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "company_size",
+              "displayName": "company_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "industry",
+              "displayName": "industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "employees",
+              "displayName": "employees",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "budget_label",
+              "displayName": "budget_label",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "linkedin",
+              "displayName": "linkedin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_tier",
+              "displayName": "lead_tier",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "score_reasons",
+              "displayName": "score_reasons",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "follow_up_count",
+              "displayName": "follow_up_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "last_contacted",
+              "displayName": "last_contacted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "next_followup_date",
+              "displayName": "next_followup_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        704,
+        0
+      ],
+      "id": "32d5bc20-3ab4-45ac-b2e8-276ca402f263",
+      "name": "Update row in sheet",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "=💬 *Lead Replied!*  *{{ $('Get row(s) in sheet').item.json.full_name }}* just replied to your follow-up email.  \n📧 {{ $('Code in JavaScript').item.json.reply_from }}  \n🎯 Tier: {{ $('Get row(s) in sheet').item.json.lead_tier }} \n📊 Score: {{ $('Get row(s) in sheet').item.json.lead_score }} \n📬 Subject: {{ $('Code in JavaScript').item.json.reply_subject }}  \n*Their message:* {{ $('Code in JavaScript').item.json.reply_snippet }}  \nReply now → {{ $('Code in JavaScript').item.json.reply_from }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        928,
+        0
+      ],
+      "id": "49101b3a-12d8-4567-9a67-a003017ad88a",
+      "name": "Send a message",
+      "webhookId": "9e9be30b-cce2-48ba-8f99-fc5f93a91e9c",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = $input.item.json;\nlet fromEmail = '';\nif (email.payload && email.payload.headers) {\n  const fromHeader = email.payload.headers.find(h => h.name.toLowerCase() === 'from');\n  if (fromHeader) {\n    const match = fromHeader.value.match(/<(.+)>/);\n    fromEmail = match ? match[1] : fromHeader.value;\n  }\n}\nreturn [{\n  json: {\n    reply_from: fromEmail.toLowerCase().trim(),\n    snippet: email.snippet || '',\n    subject: email.payload?.headers?.find(h => h.name.toLowerCase() === 'subject')?.value || '',\n    raw_email: email\n  }\n}];"
+      },
+      "id": "d81c0550-c673-45b2-9abe-a39532b13d1c",
+      "name": "Extract Reply Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $json.reply_from }}"
+            }
+          ]
+        }
+      },
+      "id": "390c8f0c-4b41-4ba9-a660-c8d200e2d47a",
+      "name": "Check Lead in Sheet",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        256,
+        224
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "4f20ae46-de7b-405a-9daa-783b81fabe07",
+              "leftValue": "={{ Object.keys($json).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEqual"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "89f3e747-c6b2-4ebc-85ae-efb4b4835371",
+      "name": "Is Known Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads"
+      },
+      "id": "39661d68-2196-4aad-9f9d-eb6ecee65eef",
+      "name": "Update Lead Status → replied",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        704,
+        224
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "value": "C0B2NMBRJBG",
+          "mode": "list",
+          "cachedResultName": "lead-support-team"
+        },
+        "text": "=💬 *New Reply Received!*\n\n*From:* {{ $json.full_name }} ({{ $json.email }})\n*Company:* {{ $json.company }}\n\n*Snippet:*\n> {{ $('Extract Reply Email').item.json.snippet }}\n\n_Lead status has been automatically updated to 'replied'_",
+        "otherOptions": {}
+      },
+      "id": "2a8d50a6-6a6f-4a0f-9b73-f62ab9659406",
+      "name": "Slack Reply Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        928,
+        224
+      ],
+      "webhookId": "bcad0651-ad1c-4960-a889-c8bc3a756de7",
+      "credentials": {
+        "slackApi": {
+          "id": "haI7h5Cts1SvV5vv",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "id": "dfd69fb9-fc2b-49f7-81c4-a3f22771fcf3",
+      "name": "Gmail Trigger1",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        224
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Reply Email": {
+      "main": [
+        [
+          {
+            "node": "Check Lead in Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Lead in Sheet": {
+      "main": [
+        [
+          {
+            "node": "Is Known Lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Known Lead?": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Status → replied",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead Status → replied": {
+      "main": [
+        [
+          {
+            "node": "Slack Reply Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Extract Reply Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "7693Gb-yB-2eCh3dzqA8j"
+  },
+  "versionId": "c10e56ce-8d51-46a6-9308-4f89c7987a52",
+  "meta": {
+    "instanceId": "5c61937d3a06f8d1b588b37993e462b4c3ffefd57c94a4efa663c39b94cefdc2"
+  },
+  "id": "5Ylrm_3Jak9y9jrpN6VOt",
+  "tags": []
+}

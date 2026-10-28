@@ -1,0 +1,306 @@
+{
+  "name": "Tool - Book Appointment (Verified)",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "start_time"
+            },
+            {
+              "name": "lead_name"
+            },
+            {
+              "name": "description"
+            },
+            {
+              "name": "whatsapp_id"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1296,
+        128
+      ],
+      "id": "a828a462-8cbe-415a-8fff-c9d0637d8a7c",
+      "name": "Execute Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Keep these identical to 'Tool - Get Available Slots'\nconst SLOT_MIN = 30, WORK_START = 10, WORK_END = 18, WORK_DAYS = [1,2,3,4,5,6];\nconst OFFSET = 5.5 * 3600 * 1000;\nconst inp = $('Execute Workflow Trigger').first().json;\nconst startMs = Date.parse(inp.start_time);\nif (isNaN(startMs)) throw new Error('INVALID_START_TIME: pass start_time exactly as returned by Get Available Slots (ISO8601 with +05:30).');\nif (startMs < Date.now()) throw new Error('INVALID_START_TIME: that time is in the past. Call Get Available Slots again.');\nconst ist = new Date(startMs + OFFSET);\nconst mins = ist.getUTCHours() * 60 + ist.getUTCMinutes();\nif (!WORK_DAYS.includes(ist.getUTCDay()) || mins < WORK_START * 60 || mins + SLOT_MIN > WORK_END * 60 || mins % SLOT_MIN !== 0)\n  throw new Error('OUTSIDE_BOOKING_RULES: not a valid appointment slot. Call Get Available Slots and use one of its slots.');\nconst endMs = startMs + SLOT_MIN * 60000;\nconst iso = (ms) => new Date(ms + OFFSET).toISOString().slice(0, 19) + '+05:30';\nconst name = (inp.lead_name || 'Lead').trim();\nreturn [{ json: { start_ms: startMs, start_iso: iso(startMs), end_iso: iso(endMs),\n  summary: `Property Viewing - ${name} (Buyer)`, description: inp.description || '', whatsapp_id: inp.whatsapp_id || '' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        128
+      ],
+      "id": "597d24a0-84e7-4114-bb12-7fd65244fd34",
+      "name": "Prepare Booking"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "40fbb450fae7084c6984d416b8ea80f744e5646a81af237c9fd954e9cef43300@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "ProoertyBookings"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $json.start_iso }}",
+        "timeMax": "={{ $json.end_iso }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        -784,
+        128
+      ],
+      "id": "7d47f19e-4ebd-44b8-a76e-1984ca73f66d",
+      "name": "Recheck Calendar",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "LIa1LOftnfxiQxA7",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prep = $('Prepare Booking').first().json;\nconst conflicts = $input.all().map(i => i.json).filter(e => e && e.id && e.status !== 'cancelled');\nreturn [{ json: { ...prep, slot_free: conflicts.length === 0, conflict_count: conflicts.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -528,
+        128
+      ],
+      "id": "47a16612-84f7-4e9f-baf6-29a84a29d659",
+      "name": "Check Overlap"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "5dbb74dd-cb16-4e24-aaee-ee23a09a7cd1",
+              "leftValue": "={{ $json.slot_free }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -256,
+        128
+      ],
+      "id": "5cbb58d6-a394-4f63-b5a5-2f9d473b3b23",
+      "name": "Slot Still Free?"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "40fbb450fae7084c6984d416b8ea80f744e5646a81af237c9fd954e9cef43300@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "ProoertyBookings"
+        },
+        "start": "={{ $json.start_iso }}",
+        "end": "={{ $json.end_iso }}",
+        "additionalFields": {
+          "description": "={{ $json.description }}",
+          "summary": "={{ $json.summary }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "38b65944-9793-4a02-be46-4cdf007f844e",
+      "name": "Create Event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "LIa1LOftnfxiQxA7",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "calendar": {
+          "__rl": true,
+          "value": "40fbb450fae7084c6984d416b8ea80f744e5646a81af237c9fd954e9cef43300@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "ProoertyBookings"
+        },
+        "eventId": "={{ $json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        0
+      ],
+      "id": "68fa717e-070b-4ab5-838e-ed6b88e56f6b",
+      "name": "Get Event (Verify)",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "LIa1LOftnfxiQxA7",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prep = $('Prepare Booking').first().json;\nconst ev = $input.first().json;\nconst startMs = Date.parse((ev.start && ev.start.dateTime) || '');\nconst ok = !!ev.id && ev.status === 'confirmed' && startMs === prep.start_ms;\nif (!ok) return [{ json: { success: false, verified: false, reason: 'VERIFICATION_FAILED',\n  message: 'The calendar event could not be verified. Do NOT tell the customer the appointment is confirmed. Apologise and say the team will confirm manually.' } }];\nreturn [{ json: { success: true, verified: true, event_id: ev.id, confirmed_start: prep.start_iso, confirmed_end: prep.end_iso,\n  calendar_status: ev.status, calendar_link: ev.htmlLink || '', message: 'Appointment created and verified on the calendar by event ID and start time.' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        0
+      ],
+      "id": "9cf8f773-c7da-44e8-b37c-377d160c3c4e",
+      "name": "Verify Event"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { success: false, verified: false, reason: 'SLOT_TAKEN',\n  message: 'That slot was just taken. Do NOT confirm anything. Apologise, call Get Available Slots again, and offer new options.' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        272
+      ],
+      "id": "5685e932-1340-4a3c-961d-74a42d549fcf",
+      "name": "Slot Taken Result"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Booking": {
+      "main": [
+        [
+          {
+            "node": "Recheck Calendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck Calendar": {
+      "main": [
+        [
+          {
+            "node": "Check Overlap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Overlap": {
+      "main": [
+        [
+          {
+            "node": "Slot Still Free?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Event": {
+      "main": [
+        [
+          {
+            "node": "Get Event (Verify)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Event (Verify)": {
+      "main": [
+        [
+          {
+            "node": "Verify Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slot Still Free?": {
+      "main": [
+        [
+          {
+            "node": "Create Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slot Taken Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "d34d07bb-a8b3-4b5c-86e9-c9c02f1d3348",
+  "meta": {
+    "instanceId": "2366a041569ff34fcf12a0a2092fd4e7c08697b8afa808acfe3b171961f16201"
+  },
+  "nodeGroups": [],
+  "id": "vh3DjMp1o1cUS86a",
+  "tags": []
+}

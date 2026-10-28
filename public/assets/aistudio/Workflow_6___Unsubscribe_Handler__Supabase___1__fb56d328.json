@@ -1,0 +1,223 @@
+{
+  "name": "Workflow 6 — Unsubscribe Handler (Supabase)",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "unsubscribe",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3e9e3217-df32-4514-8782-c79493471ab2",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        112
+      ],
+      "webhookId": "aac138b9-ed04-4300-b860-7f1dd4dd7950"
+    },
+    {
+      "parameters": {
+        "jsCode": "const query = $input.item.json.query;\n\n// Get email and token from URL\nconst email    = (query.email || '').toLowerCase().trim();\nconst token    = (query.token || '').trim();\n\n// Must have both\nif (!email || !token) {\n  throw new Error('Missing email or token');\n}\n\n// ── Recreate token using same function ────────────────\nconst secretKey = 'LeadMgmt2026@Secure'; // same key as Build Follow-up Email\n\nfunction generateToken(email, secret) {\n  const combined = email + secret + email.length;\n  let hash = 0;\n  for (let i = 0; i < combined.length; i++) {\n    const char = combined.charCodeAt(i);\n    hash = ((hash << 5) - hash) + char;\n    hash = hash & hash;\n  }\n  const positiveHash = Math.abs(hash).toString(16);\n  const extra = (email.length * secret.length).toString(16);\n  return (positiveHash + extra + positiveHash)\n    .padEnd(32, '0')\n    .substring(0, 32);\n}\n\nconst expectedToken = generateToken(email, secretKey);\n\n// ── Compare tokens ────────────────────────────────────\nconst isValid = token === expectedToken;\n\nreturn [{\n  json: {\n    email:      email,\n    token:      token,\n    is_valid:   isValid,\n    verified_at: new Date().toLocaleString('en-IN', {\n      timeZone: 'Asia/Kolkata'\n    })\n  }\n}];"
+      },
+      "id": "f4ea476b-7376-438a-9d77-d0a3cec441fa",
+      "name": "Verify Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "4f20ae46-de7b-405a-9daa-783b81fabe07",
+              "leftValue": "={{ $json.is_valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e1677c95-2467-441a-af7e-297b8fd2f337",
+      "name": "Is Token Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $('Verify Token').item.json.email }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "opted_out"
+            }
+          ]
+        }
+      },
+      "id": "20711cb7-1cc3-40e0-9d01-f572c8aff74b",
+      "name": "Update Lead Status → opted_out",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<!DOCTYPE html>\n<html>\n<head>\n  <title>Unsubscribed</title>\n  <style>\n    body {\n      font-family: Arial, sans-serif;\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      height: 100vh;\n      margin: 0;\n      background: #f5f5f5;\n    }\n    .box {\n      text-align: center;\n      background: white;\n      padding: 40px;\n      border-radius: 12px;\n      box-shadow: 0 2px 12px rgba(0,0,0,0.1);\n      max-width: 400px;\n    }\n    h2 { color: #0066FF; margin-bottom: 12px; }\n    p  { color: #666666; font-size: 14px; line-height: 1.6; }\n    .email { \n      background: #f0f4ff; \n      padding: 8px 16px; \n      border-radius: 6px;\n      font-size: 13px;\n      color: #0066FF;\n      margin: 12px 0;\n      display: inline-block;\n    }\n  </style>\n</head>\n<body>\n  <div class=\"box\">\n    <h2>✅ Successfully Unsubscribed</h2>\n    <p>You have been unsubscribed from all future emails.</p>\n    <div class=\"email\">{{ $json.email }}</div>\n    <p>You will not receive any further emails from us.<br>\n    Changed your mind? Simply reply to any of our \n    previous emails.</p>\n  </div>\n</body>\n</html>",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        }
+      },
+      "id": "8153bdcd-17f7-4901-989e-bb68dafa1300",
+      "name": "Respond Confirmation Page",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<html>\n<body>\n  <h2>Invalid Link</h2>\n  <p>This unsubscribe link is invalid or expired. Please contact support.</p>\n</body>\n</html>",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        }
+      },
+      "id": "b5c622b2-860c-43f1-8879-79afb4363ad2",
+      "name": "Respond Invalid Token",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Token": {
+      "main": [
+        [
+          {
+            "node": "Is Token Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Token Valid?": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Status → opted_out",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Invalid Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead Status → opted_out": {
+      "main": [
+        [
+          {
+            "node": "Respond Confirmation Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "7693Gb-yB-2eCh3dzqA8j"
+  },
+  "versionId": "bee29dc3-6861-4fbb-8ac5-844b29291a26",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5c61937d3a06f8d1b588b37993e462b4c3ffefd57c94a4efa663c39b94cefdc2"
+  },
+  "id": "xb5zS-hcncaNZyDldaylW",
+  "tags": []
+}

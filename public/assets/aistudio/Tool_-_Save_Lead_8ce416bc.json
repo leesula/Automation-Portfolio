@@ -1,0 +1,231 @@
+{
+  "name": "Tool - Save Lead",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const inp = $('Execute Workflow Trigger').first().json;\nconst wa_id = String(inp.wa_id || '').trim();\nif (!wa_id) throw new Error('MISSING_WA_ID: wa_id is required.');\nlet data;\ntry { data = typeof inp.lead_data === 'string' ? JSON.parse(inp.lead_data) : (inp.lead_data || {}); }\ncatch (e) { throw new Error('INVALID_LEAD_DATA: lead_data must be a valid JSON object string, e.g. {\"budget\":\"80 lakh\"}'); }\nconst BLOCKED = ['id', 'created_at', 'updated_at', 'wa_id'];\nconst EMPTY = ['', 'null', 'undefined', 'unknown', 'n/a', 'na', 'none'];\nconst body = { wa_id };\nfor (const [k, v] of Object.entries(data)) {\n  if (BLOCKED.includes(k)) continue;\n  if (v === null || v === undefined) continue;\n  if (typeof v === 'string' && EMPTY.includes(v.trim().toLowerCase())) continue;\n  body[k] = v;\n}\nif (body.lead_score !== undefined) body.lead_score = Number(body.lead_score);\nif (Object.keys(body).length === 1) throw new Error('NOTHING_TO_SAVE: lead_data had no non-empty fields.');\nreturn [{ json: { body, saved_fields: Object.keys(body).filter(k => k !== 'wa_id') } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -144
+      ],
+      "id": "119d6962-a0f1-4281-84d2-d60fce1ffe46",
+      "name": "Clean Fields",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vylxrinrtnqyioccahui.supabase.co/rest/v1/buyer_leads?on_conflict=wa_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=representation"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        -144
+      ],
+      "id": "a7fccd4c-340b-4f6e-bf2f-ebe82edcf23f",
+      "name": "Upsert Buyer Lead",
+      "credentials": {
+        "supabaseApi": {
+          "id": "MciEL3C0Gjwb2jHY",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst row = Array.isArray(rows[0]) ? rows[0][0] : rows[0];\nconst fields = $('Clean Fields').first().json.saved_fields;\nif (!row || !row.id) throw new Error('SAVE_FAILED: Supabase returned no row.');\nreturn [{ json: { success: true, lead_id: row.id, saved_fields: fields,\n  lead_score: row.lead_score ?? null, lead_temperature: row.lead_temperature ?? null,\n  message: 'Lead saved successfully. Use lead_id for approval requests.' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        -144
+      ],
+      "id": "c9bc3227-17a7-4c33-a849-aacfbf64b2b0",
+      "name": "Return Result",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "wa_id"
+            },
+            {
+              "name": "lead_data"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        128
+      ],
+      "id": "3a48a171-ef00-424e-af9f-f27775c59f3a",
+      "name": "Execute Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inp = $('Execute Workflow Trigger').first().json;\nconst wa_id = String(inp.wa_id || '').trim();\nif (!wa_id) throw new Error('MISSING_WA_ID: wa_id is required.');\nlet data;\ntry { data = typeof inp.lead_data === 'string' ? JSON.parse(inp.lead_data) : (inp.lead_data || {}); }\ncatch (e) { throw new Error('INVALID_LEAD_DATA: lead_data must be a valid JSON object string, e.g. {\"budget\":\"80 lakh\"}'); }\n// columns that exist in buyer_leads (wa_id and phone_number are handled automatically)\nconst ALLOWED = ['lead_name','email','property_type','location','bedrooms','property_size','budget','purchase_timeline','financing_status',\n  'purchase_purpose','requirements','priority_match','matched_properties','conversation_summary','lead_score','lead_temperature',\n  'appointment_requested','appointment_confirmed','appointment_time','appointment_event_id'];\nconst ALIAS = { property_location: 'location', name: 'lead_name', customer_name: 'lead_name', summary: 'conversation_summary' };\nconst EMPTY = ['', 'null', 'undefined', 'unknown', 'n/a', 'na', 'none'];\nconst body = { wa_id }, ignored = [];\nfor (let [k, v] of Object.entries(data)) {\n  k = ALIAS[k] || k;\n  if (v === null || v === undefined) continue;\n  if (typeof v === 'string' && EMPTY.includes(v.trim().toLowerCase())) continue;\n  if (!ALLOWED.includes(k)) { ignored.push(k); continue; }\n  body[k] = v;\n}\nif (body.lead_score !== undefined) {\n  const m = String(body.lead_score).match(/-?\\d+(\\.\\d+)?/); const n = m ? Math.round(parseFloat(m[0])) : NaN;\n  if (isNaN(n)) delete body.lead_score; else body.lead_score = Math.max(0, Math.min(100, n));\n}\nif (body.lead_temperature !== undefined) body.lead_temperature = String(body.lead_temperature).trim().toUpperCase();\nfor (const b of ['appointment_requested', 'appointment_confirmed'])\n  if (body[b] !== undefined) body[b] = body[b] === true || String(body[b]).toLowerCase() === 'true';\nif (Object.keys(body).length === 1) throw new Error('NOTHING_TO_SAVE: no valid non-empty fields. Allowed fields: ' + ALLOWED.join(', '));\nreturn [{ json: { body, saved_fields: Object.keys(body).filter(k => k !== 'wa_id'), ignored_fields: ignored } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        128
+      ],
+      "id": "8b4a96a6-7818-4e50-ac1a-df68fa90561e",
+      "name": "Clean Fields1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vylxrinrtnqyioccahui.supabase.co/rest/v1/buyer_leads?on_conflict=wa_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=representation"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        704,
+        128
+      ],
+      "id": "4e5bf807-c8d3-470a-a199-610f8d4decd3",
+      "name": "Upsert Buyer Lead1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "MciEL3C0Gjwb2jHY",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst row = Array.isArray(rows[0]) ? rows[0][0] : rows[0];\nconst fields = $('Clean Fields1').first().json.saved_fields;\nif (!row || !row.id) throw new Error('SAVE_FAILED: Supabase returned no row.');\nreturn [{ json: { success: true, lead_id: row.id, saved_fields: fields, ignored_fields: $('Clean Fields1').first().json.ignored_fields,\n  lead_score: row.lead_score ?? null, lead_temperature: row.lead_temperature ?? null,\n  message: 'Lead saved successfully. Use lead_id for approval requests.' } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        128
+      ],
+      "id": "45461717-91bc-4896-9b5b-dc73ba50948f",
+      "name": "Return Result1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Clean Fields": {
+      "main": [
+        [
+          {
+            "node": "Upsert Buyer Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Buyer Lead": {
+      "main": [
+        [
+          {
+            "node": "Return Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Clean Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean Fields1": {
+      "main": [
+        [
+          {
+            "node": "Upsert Buyer Lead1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Buyer Lead1": {
+      "main": [
+        [
+          {
+            "node": "Return Result1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "4630f0f6-5436-4f52-b4af-0819ed500fc1",
+  "meta": {
+    "instanceId": "2366a041569ff34fcf12a0a2092fd4e7c08697b8afa808acfe3b171961f16201"
+  },
+  "nodeGroups": [],
+  "id": "Yub7q9SuD2HIser5",
+  "tags": []
+}

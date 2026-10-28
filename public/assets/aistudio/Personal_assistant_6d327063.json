@@ -1,0 +1,321 @@
+{
+  "name": "Personal assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -496,
+        -96
+      ],
+      "id": "ac4a5413-0bec-4e81-be55-47b5ad3d6819",
+      "name": "When chat message received",
+      "webhookId": "cdcd05a8-2eee-4c62-950b-408e629aa3fe"
+    },
+    {
+      "parameters": {
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You are an AI assistant that manages the user's daily schedule using the connected Google Sheets tool.\n\nYour responsibilities are:\n1. Understand the user's request related to their daily tasks or schedule.\n2. Read existing schedule data from the Google Sheet when necessary.\n3. Append new tasks when the user wants to add a task.\n4. Update an existing row when the user wants to modify or complete a task.\n5. Never unnecessarily create duplicate rows.\n6. Preserve the existing Google Sheet structure and column names.\n\nGOOGLE SHEET STRUCTURE:\nThe sheet contains these columns:\n\n- date\n- task\n- status\n\nDATE FORMAT RULE:\nThe Google Sheet uses the date format:\n\nM/D/YYYY\n\nExample:\n9/10/2026\n\nALWAYS use this exact date representation when creating or updating rows.\n\nDo NOT use:\n- 2026-09-10\n- 10/09/2026\n- September 10, 2026\n- 10-Sep-2026\n- 09-10-2026\n\nUse:\n9/10/2026\n\nDATE HANDLING:\n- If the user provides a date, convert it to M/D/YYYY before writing to Google Sheets.\n- If the user uses a relative date such as \"today\", \"tomorrow\", or \"next Monday\", determine the actual date first and then write it in M/D/YYYY format.\n- Never change the date format of existing rows.\n- If updating a row, preserve the existing date unless the user explicitly asks to change it.\n\nTASK HANDLING:\n- Store the user's task in the \"task\" column.\n- Keep task descriptions concise but meaningful.\n- Do not create additional columns.\n- Do not modify the column headers.\n\nSTATUS HANDLING:\n- When adding a new task and the user does not specify a status, use:\n  Pending\n- If the user says the task is completed, use:\n  Completed\n- If the user says a task is in progress, use:\n  In Progress\n- If the user explicitly provides another status, preserve the user's intended status.\n\nAPPENDING NEW TASKS:\nWhen the user asks to add a new task:\n1. Determine the correct date.\n2. Convert the date to M/D/YYYY.\n3. Check existing rows when necessary to avoid creating an accidental duplicate.\n4. Append a new row with:\n   date | task | status\n\nExample:\n\nUser:\n\"Add a task for September 10 to study n8n.\"\n\nWrite:\n\n9/10/2026 | Study n8n | Pending\n\nUPDATING EXISTING TASKS:\nWhen the user asks to modify, complete, or change an existing task:\n1. Search the existing Google Sheet data.\n2. Identify the correct row based on date and task.\n3. Update only the required field(s).\n4. Do not create a new row if an existing matching task should be updated.\n\nExample:\n\nUser:\n\"Mark my n8n task for September 10 as completed.\"\n\nFind:\n9/10/2026 | Study n8n | Pending\n\nUpdate to:\n9/10/2026 | Study n8n | Completed\n\nDUPLICATE PREVENTION:\nBefore appending a task, check whether the same or substantially similar task already exists for the same date.\n\nIf it already exists:\n- Update the existing row if appropriate.\n- Do not create a duplicate row unless the user clearly intends to create another separate task.\n\nTOOL USAGE:\nUse the connected Google Sheets tool whenever the user asks you to:\n- Add a task\n- Update a task\n- Complete a task\n- Change a task\n- Check their schedule\n- Retrieve schedule information\n- Modify their daily schedule\n\nDo not claim that a task was added or updated unless the Google Sheets tool successfully performs the operation.\n\nWhen using the Google Sheets tool:\n- Respect the existing column structure.\n- Preserve the date format M/D/YYYY.\n- Do not overwrite unrelated rows.\n- Do not modify headers.\n- Append only when a new row is required.\n- Update an existing row when the user is modifying an existing task.\n\nRESPONSE STYLE:\nAfter successfully modifying the sheet, respond briefly and clearly.\n\nExamples:\n\"Added: Study n8n — 9/10/2026.\"\n\"Updated: Study n8n is now marked as Completed.\"\n\nIf the requested task cannot be found when the user asks to update it, do not create a new task automatically. Tell the user that the matching task was not found and ask what they want to do."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -16,
+        -96
+      ],
+      "id": "2f9b9176-756f-4e54-bf51-dfe25633ec25",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-safeguard-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        128
+      ],
+      "id": "2ff884e4-2961-4a05-904c-4838671b8f2a",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "v86O6IZrWchywE4W",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -16,
+        128
+      ],
+      "id": "bb07b29d-18bb-4e19-af9d-ebde4153034c",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "url": "https://serpapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "engine",
+              "value": "google_ai_mode"
+            },
+            {
+              "name": "q",
+              "value": "Coffee"
+            },
+            {
+              "name": "api_key",
+              "value": "91d6329cf9b73e165a6aa4baea343e564329f3109bac988640f420b77ea8d4fd"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        112,
+        128
+      ],
+      "id": "53ad0274-3fb3-44c0-b617-972354a79a34",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1b-xSuU2KyN44j18eikQ97csiB4bpYqLLPzIOF2-tBNU",
+          "mode": "list",
+          "cachedResultName": "Daily Schedule",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1b-xSuU2KyN44j18eikQ97csiB4bpYqLLPzIOF2-tBNU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1b-xSuU2KyN44j18eikQ97csiB4bpYqLLPzIOF2-tBNU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('date', ``, 'string') }}",
+            "task": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('task', ``, 'string') }}",
+            "status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('status', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "task"
+          ],
+          "schema": [
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "task",
+              "displayName": "task",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        240,
+        128
+      ],
+      "id": "8941fca1-de5f-4248-af23-944aa8db604e",
+      "name": "My daily schedule",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HGI12abq1fhmN4Tg",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://serpapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "engine",
+              "value": "google_news"
+            },
+            {
+              "name": "q",
+              "value": "space"
+            },
+            {
+              "name": "api_key",
+              "value": "91d6329cf9b73e165a6aa4baea343e564329f3109bac988640f420b77ea8d4fd"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        128
+      ],
+      "id": "a9a419c6-0e0e-4bef-a27f-f14715775b89",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "model": "openai/o3-mini:batch",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        128
+      ],
+      "id": "c1c4280f-21db-4e43-92a8-1d9b1e8b2818",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "kBhs3KxBXrgQYiYk",
+          "name": "OpenRouter account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "My daily schedule": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "373954d7-2955-4f07-a01e-18f9ef9b600a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2366a041569ff34fcf12a0a2092fd4e7c08697b8afa808acfe3b171961f16201"
+  },
+  "nodeGroups": [],
+  "id": "gMqVoxICP7d5A4hn",
+  "tags": []
+}

@@ -1,0 +1,704 @@
+{
+  "name": "Workflow 2 — Follow-up Sequence (Supabase)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "ffe35bfe-ccd4-407a-871d-026bc3279ece",
+      "name": "Schedule Trigger — Daily Follow-up",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg",
+          "mode": "list",
+          "cachedResultName": "Intake details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1892694424,
+          "mode": "list",
+          "cachedResultName": "Lead Masters",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit#gid=1892694424"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "new"
+            }
+          ]
+        },
+        "options": {
+          "returnAllMatches": "returnAllMatches"
+        }
+      },
+      "id": "b7e168a8-d6c1-4a1c-bc83-5a12655dbcd1",
+      "name": "Get Leads Due for Follow-up",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        224,
+        0
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "followup-count-check",
+              "leftValue": "={{ $json.follow_up_count}}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            },
+            {
+              "id": "3f6d2ab4-8c87-4853-b0cb-84d6e63d526f",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "opted_out",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "looseTypeValidation": true
+        }
+      },
+      "id": "82c5c39b-b544-4232-85e5-2616c3b8dfa9",
+      "name": "Follow-up Count < 3?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $input.item.json;\nconst count = parseInt(lead.follow_up_count) || 0;\n\n// ── Safely extract first name ─────────────────────────\nlet firstName = 'there';\nif (lead.first_name && lead.first_name !== '') {\n  firstName = lead.first_name;\n} else if (lead.full_name && lead.full_name !== '') {\n  firstName = lead.full_name.split(' ')[0];\n}\n\n// ── Generate token ────────────────────────────────────\nconst secretKey = 'LeadMgmt2026@Secure';\n\nfunction generateToken(email, secret) {\n  const combined = email + secret + email.length;\n  let hash = 0;\n  for (let i = 0; i < combined.length; i++) {\n    const char = combined.charCodeAt(i);\n    hash = ((hash << 5) - hash) + char;\n    hash = hash & hash;\n  }\n  const positiveHash = Math.abs(hash).toString(16);\n  const extra = (email.length * secret.length).toString(16);\n  return (positiveHash + extra + positiveHash)\n    .padEnd(32, '0')\n    .substring(0, 32);\n}\n\nconst token = generateToken(lead.email, secretKey);\n\n// ── Build unsubscribe URL ─────────────────────────────\nconst baseUrl = 'https://bursting-freely-cobra.ngrok-free.app';\nconst unsubscribeUrl = `${baseUrl}/webhook/unsubscribe?email=${encodeURIComponent(lead.email)}&token=${token}`;\n\n// ── Button links ──────────────────────────────────────\nconst calLink    = 'https://cal.com/chweet-girl-bsfmon/';\nconst replyEmail = 'sudhaleela222@gmail.com';\n\n// ── Professional footer with buttons ─────────────────\nconst unsubscribeFooter = `\n<div style=\"margin-top:48px;padding-top:24px;\nborder-top:1px solid #eeeeee;text-align:center;\nfont-family:Arial,sans-serif\">\n\n  <p style=\"font-size:13px;color:#666666;margin:0 0 20px\">\n    Interested in connecting? We would love to hear from you.\n  </p>\n\n  <!-- Book a Call button -->\n  <a href=\"${calLink}\"\n     style=\"display:inline-block;\n            background-color:#0066FF;\n            color:#ffffff;\n            font-size:14px;\n            font-weight:600;\n            text-decoration:none;\n            padding:12px 28px;\n            border-radius:6px;\n            margin:0 8px 12px\">\n    📅 Book a Call\n  </a>\n\n  <!-- Reply to Us button -->\n  <a href=\"mailto:${replyEmail}\"\n     style=\"display:inline-block;\n            background-color:#ffffff;\n            color:#0066FF;\n            font-size:14px;\n            font-weight:600;\n            text-decoration:none;\n            padding:12px 28px;\n            border-radius:6px;\n            border:2px solid #0066FF;\n            margin:0 8px 12px\">\n    ✉️ Reply to Us\n  </a>\n\n  <!-- Unsubscribe button -->\n  <a href=\"${unsubscribeUrl}\"\n     style=\"display:inline-block;\n            background-color:#ffffff;\n            color:#CC0000;\n            font-size:14px;\n            font-weight:600;\n            text-decoration:none;\n            padding:12px 28px;\n            border-radius:6px;\n            border:2px solid #CC0000;\n            margin:0 8px 12px\">\n    Unsubscribe\n  </a>\n\n  <div style=\"margin-top:24px\"></div>\n\n  <!-- Legal footer -->\n  <p style=\"font-size:11px;color:#aaaaaa;margin:0\">\n    You are receiving this email because you submitted \n    an enquiry through our website.\n  </p>\n\n</div>`;\n\n// ── Email subjects ────────────────────────────────────\nconst subjects = [\n  `Hi ${firstName}, just checking in!`,\n  `${firstName}, a quick thought for you`,\n  `Final note from us, ${firstName}`\n];\n\n// ── Email bodies ──────────────────────────────────────\nconst bodies = [\n\n  `<p>Hi ${firstName},</p>\n  <p>I wanted to follow up on your recent enquiry.\n  We would love to help <strong>${lead.company}</strong>\n  achieve great results.</p>\n  <p>Would you be open to a quick conversation this week?\n  Simply reply to this email and we will take it\n  from there.</p>\n  <p>Best regards,<br>The Team</p>\n  ${unsubscribeFooter}`,\n\n  `<p>Hi ${firstName},</p>\n  <p>I wanted to share something relevant for a company\n  like <strong>${lead.company}</strong>.</p>\n  <p>We have helped businesses with a similar profile\n  significantly improve their results. I would love to\n  share how — just reply to this email and I will\n  send the details across.</p>\n  <p>Best regards,<br>The Team</p>\n  ${unsubscribeFooter}`,\n\n  `<p>Hi ${firstName},</p>\n  <p>This will be my last follow-up — I don't want\n  to crowd your inbox.</p>\n  <p>If the timing isn't right, no worries at all.\n  Whenever you are ready, simply reply to this email\n  and we will pick up from there.</p>\n  <p>Best regards,<br>The Team</p>\n  ${unsubscribeFooter}`\n\n];\n\n// ── Return output ─────────────────────────────────────\nreturn [{\n  json: {\n    ...lead,\n    followup_subject:  subjects[count],\n    followup_body:     bodies[count],\n    next_count:        count + 1,\n    followup_number:   count + 1,\n    unsubscribe_url:   unsubscribeUrl,\n    unsubscribe_token: token\n  }\n}];"
+      },
+      "id": "3a5770eb-c623-4981-a5f2-196451bdd935",
+      "name": "Build Follow-up Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.followup_subject }}",
+        "message": "={{ $json.followup_body }}",
+        "options": {}
+      },
+      "id": "33ba6b3d-c952-4533-9258-71ba2a079fc9",
+      "name": "Send Follow-up Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        896,
+        0
+      ],
+      "webhookId": "aba71662-8be4-4342-bd25-b1d9fa787b80",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg",
+          "mode": "list",
+          "cachedResultName": "Intake details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1892694424,
+          "mode": "list",
+          "cachedResultName": "Lead Masters",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DjY6srf6OY_6i83bhUbfH8bSthvB_o56yxFthEgjNAg/edit#gid=1892694424"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "follow_up_count": "={{ $('Build Follow-up Email').item.json.follow_up_count + 1}}",
+            "email": "={{ $('Build Follow-up Email').item.json.email }}",
+            "status": "={{ $json.next_count >= 3 ? 'sequence_complete' : 'new' }}",
+            "last_contacted": "={{ $now.toISO() }}",
+            "next_followup_date": "={{ $now.plus({days: 1}).toISO() }}"
+          },
+          "matchingColumns": [
+            "email"
+          ],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "full_name",
+              "displayName": "full_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "job_title",
+              "displayName": "job_title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "company_size",
+              "displayName": "company_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "industry",
+              "displayName": "industry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "employees",
+              "displayName": "employees",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "budget_label",
+              "displayName": "budget_label",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "linkedin",
+              "displayName": "linkedin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_score",
+              "displayName": "lead_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_tier",
+              "displayName": "lead_tier",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "score_reasons",
+              "displayName": "score_reasons",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "follow_up_count",
+              "displayName": "follow_up_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_contacted",
+              "displayName": "last_contacted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "next_followup_date",
+              "displayName": "next_followup_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "d5243011-22a7-4a87-a509-0cc79d58c752",
+      "name": "Update Follow-up Count in Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        0
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "email",
+              "condition": "eq",
+              "keyValue": "={{ $('Build Follow-up Email1').item.json.email }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "follow_up_count",
+              "fieldValue": "={{ $('Build Follow-up Email1').item.json.follow_up_count + 1 }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $('Build Follow-up Email1').item.json.next_count >= 3 ? 'sequence_complete' : 'new' }}"
+            },
+            {
+              "fieldId": "last_contacted",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "next_followup_date",
+              "fieldValue": "={{ $now.plus({days: 1}).toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "30364c51-d08a-42f4-85c5-f94bc5dfdfc4",
+      "name": "Update Follow-up Count",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        256
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "id": "04feda7a-d69c-4cca-a7e4-a731e0167ac3",
+      "name": "Schedule Trigger — Daily Follow-up1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "leads",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "new"
+            }
+          ]
+        }
+      },
+      "id": "b04d889b-2100-4407-baf5-a624e60c052e",
+      "name": "Get Leads Due for Follow-up1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        336,
+        336
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "jg5tKiKfZfHHctLT",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "followup-count-check",
+              "leftValue": "={{ $json.follow_up_count }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            },
+            {
+              "id": "0a6a9882-1ab3-45c1-aec1-fb3e8f0fbed7",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "opted_out",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "looseTypeValidation": true
+        }
+      },
+      "id": "672e0726-c4ef-4f06-aeb0-80eb8a60a549",
+      "name": "Follow-up Count < 3?1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        528,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead = $input.item.json;\nconst count = parseInt(lead.follow_up_count) || 0;\n\n// ── Safely extract first name ─────────────────────────\nlet firstName = 'there';\nif (lead.first_name && lead.first_name !== '') {\n  firstName = lead.first_name;\n} else if (lead.full_name && lead.full_name !== '') {\n  firstName = lead.full_name.split(' ')[0];\n}\n\n// ── Generate token ────────────────────────────────────\nconst secretKey = 'LeadMgmt2026@Secure';\n\nfunction generateToken(email, secret) {\n  const combined = email + secret + email.length;\n  let hash = 0;\n  for (let i = 0; i < combined.length; i++) {\n    const char = combined.charCodeAt(i);\n    hash = ((hash << 5) - hash) + char;\n    hash = hash & hash;\n  }\n  const positiveHash = Math.abs(hash).toString(16);\n  const extra = (email.length * secret.length).toString(16);\n  return (positiveHash + extra + positiveHash)\n    .padEnd(32, '0')\n    .substring(0, 32);\n}\n\nconst token = generateToken(lead.email, secretKey);\n\n// ── Build unsubscribe URL ─────────────────────────────\nconst baseUrl = 'https://barge-external-eliminate.ngrok-free.dev';\nconst unsubscribeUrl = `${baseUrl}/webhook/unsubscribe?email=${encodeURIComponent(lead.email)}&token=${token}`;\n\n// ── Button links ──────────────────────────────────────\nconst calLink    = 'https://cal.com/chweet-girl-bsfmon/';\nconst replyEmail = 'sudhaleela222@gmail.com';\n\n// ── Professional footer with buttons ─────────────────\nconst unsubscribeFooter = `\n<div style=\"margin-top:48px;padding-top:24px;\nborder-top:1px solid #eeeeee;text-align:center;\nfont-family:Arial,sans-serif\">\n\n  <p style=\"font-size:13px;color:#666666;margin:0 0 20px\">\n    Interested in connecting? We would love to hear from you.\n  </p>\n\n  <!-- Book a Call button -->\n  <a href=\"${calLink}\"\n     style=\"display:inline-block;\n            background-color:#0066FF;\n            color:#ffffff;\n            font-size:14px;\n            font-weight:600;\n            text-decoration:none;\n            padding:12px 28px;\n            border-radius:6px;\n            margin:0 8px 12px\">\n    📅 Book a Call\n  </a>\n\n  <!-- Reply to Us button -->\n  <a href=\"mailto:${replyEmail}\"\n     style=\"display:inline-block;\n            background-color:#ffffff;\n            color:#0066FF;\n            font-size:14px;\n            font-weight:600;\n            text-decoration:none;\n            padding:12px 28px;\n            border-radius:6px;\n            border:2px solid #0066FF;\n            margin:0 8px 12px\">\n    ✉️ Reply to Us\n  </a>\n\n  <!-- Unsubscribe button -->\n  <a href=\"${unsubscribeUrl}\"\n     style=\"display:inline-block;\n            background-color:#ffffff;\n            color:#CC0000;\n            font-size:14px;\n            font-weight:600;\n            text-decoration:none;\n            padding:12px 28px;\n            border-radius:6px;\n            border:2px solid #CC0000;\n            margin:0 8px 12px\">\n    Unsubscribe\n  </a>\n\n  <div style=\"margin-top:24px\"></div>\n\n  <!-- Legal footer -->\n  <p style=\"font-size:11px;color:#aaaaaa;margin:0\">\n    You are receiving this email because you submitted \n    an enquiry through our website.\n  </p>\n\n</div>`;\n\n// ── Email subjects ────────────────────────────────────\nconst subjects = [\n  `Hi ${firstName}, just checking in!`,\n  `${firstName}, a quick thought for you`,\n  `Final note from us, ${firstName}`\n];\n\n// ── Email bodies ──────────────────────────────────────\nconst bodies = [\n\n  `<p>Hi ${firstName},</p>\n  <p>I wanted to follow up on your recent enquiry.\n  We would love to help <strong>${lead.company}</strong>\n  achieve great results.</p>\n  <p>Would you be open to a quick conversation this week?\n  Simply reply to this email and we will take it\n  from there.</p>\n  <p>Best regards,<br>The Team</p>\n  ${unsubscribeFooter}`,\n\n  `<p>Hi ${firstName},</p>\n  <p>I wanted to share something relevant for a company\n  like <strong>${lead.company}</strong>.</p>\n  <p>We have helped businesses with a similar profile\n  significantly improve their results. I would love to\n  share how — just reply to this email and I will\n  send the details across.</p>\n  <p>Best regards,<br>The Team</p>\n  ${unsubscribeFooter}`,\n\n  `<p>Hi ${firstName},</p>\n  <p>This will be my last follow-up — I don't want\n  to crowd your inbox.</p>\n  <p>If the timing isn't right, no worries at all.\n  Whenever you are ready, simply reply to this email\n  and we will pick up from there.</p>\n  <p>Best regards,<br>The Team</p>\n  ${unsubscribeFooter}`\n\n];\n\n// ── Return output ─────────────────────────────────────\nreturn [{\n  json: {\n    ...lead,\n    followup_subject:  subjects[count],\n    followup_body:     bodies[count],\n    next_count:        count + 1,\n    followup_number:   count + 1,\n    unsubscribe_url:   unsubscribeUrl,\n    unsubscribe_token: token\n  }\n}];"
+      },
+      "id": "fa9c960c-5dbe-40cf-839c-1b1361b1af32",
+      "name": "Build Follow-up Email1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.followup_subject }}",
+        "message": "={{ $json.followup_body }}",
+        "options": {}
+      },
+      "id": "b74dc5a3-51cd-40e6-9f1e-00e95b4828e6",
+      "name": "Send Follow-up Email1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        960,
+        256
+      ],
+      "webhookId": "fc49695b-68e7-4323-9efc-0e83f9a861f4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QQA0xZFVBdSqt1XG",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger — Daily Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Get Leads Due for Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Leads Due for Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Follow-up Count < 3?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Follow-up Count < 3?": {
+      "main": [
+        [
+          {
+            "node": "Build Follow-up Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Follow-up Email": {
+      "main": [
+        [
+          {
+            "node": "Send Follow-up Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Follow-up Email": {
+      "main": [
+        [
+          {
+            "node": "Update Follow-up Count in Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger — Daily Follow-up1": {
+      "main": [
+        [
+          {
+            "node": "Get Leads Due for Follow-up1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Leads Due for Follow-up1": {
+      "main": [
+        [
+          {
+            "node": "Follow-up Count < 3?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Follow-up Count < 3?1": {
+      "main": [
+        [
+          {
+            "node": "Build Follow-up Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Follow-up Email1": {
+      "main": [
+        [
+          {
+            "node": "Send Follow-up Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Follow-up Email1": {
+      "main": [
+        [
+          {
+            "node": "Update Follow-up Count",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "7693Gb-yB-2eCh3dzqA8j"
+  },
+  "versionId": "97a0a2c2-6ab3-405c-af28-5a5fc78ddea5",
+  "meta": {
+    "instanceId": "5c61937d3a06f8d1b588b37993e462b4c3ffefd57c94a4efa663c39b94cefdc2"
+  },
+  "id": "WNtNVzEjBY-R_Gw_dPztc",
+  "tags": []
+}

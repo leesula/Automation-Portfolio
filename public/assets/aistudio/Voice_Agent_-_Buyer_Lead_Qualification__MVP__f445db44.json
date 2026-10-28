@@ -1,0 +1,1099 @@
+{
+  "name": "Voice Agent - Buyer Lead Qualification (MVP)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Setup (replace before activating)\nFind & replace in this file BEFORE importing:\n- `__SUPABASE_URL__` -> https://YOUR-REF.supabase.co\n- `__ADVISOR_CALENDAR_ID__` -> `primary` or the advisor's calendar email\n- `__SLACK_CHANNEL_ID__` -> the Slack channel ID (e.g. C0123456789)\n\nCredentials to attach after import: Header Auth (name `x-vapi-secret`) on the 4 webhooks, Supabase API (service role) on Supabase nodes, Google Calendar OAuth2 on the 2 calendar-API nodes, Slack on the Slack node.",
+        "height": 260,
+        "width": 620,
+        "color": 5
+      },
+      "id": "375a36db-d5d8-442b-90a8-73001ead314e",
+      "name": "Note 0",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4416,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### A. upsert_lead\nSaves/updates the buyer row. DB trigger re-scores. Returns tier + NEXT step to the voice agent.",
+        "height": 110,
+        "width": 520,
+        "color": 4
+      },
+      "id": "bf46ea7c-0485-40db-ad77-303fe4c8d125",
+      "name": "Note 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4384,
+        1024
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body ?? input;\nconst msg = body.message ?? {};\nconst call = msg.call ?? {};\nconst tc = (msg.toolCallList && msg.toolCallList[0]) || (msg.toolCalls && msg.toolCalls[0]) || {};\nlet args = tc.arguments ?? tc.function?.arguments ?? {};\nif (typeof args === 'string') { try { args = JSON.parse(args); } catch (e) { args = {}; } }\nconst toStr = v => (typeof v === 'string' && v.trim() !== '') ? v.trim() : undefined;\nconst phone = String(call.customer?.number || args.phone || `web-${String(call.id || 'test').slice(0, 8)}`).replace(/\\s+/g, '');\n\nconst ENUMS = {\n  property_type: ['single_family','condo','townhouse','multi_family','land','other'],\n  timeline: ['asap','within_1_month','1_3_months','3_6_months','6_plus_months','just_browsing'],\n  financing_status: ['cash','pre_approved','in_process','not_started','unknown'],\n};\nconst toNum = v => {\n  if (v === undefined || v === null || v === '') return undefined;\n  const n = Number(String(v).replace(/[$,\\s]/g, ''));\n  return Number.isFinite(n) ? n : undefined;\n};\nconst toBool = v => {\n  if (typeof v === 'boolean') return v;\n  if (typeof v === 'string') {\n    const s = v.trim().toLowerCase();\n    if (['true', 'yes', 'y'].includes(s)) return true;\n    if (['false', 'no', 'n'].includes(s)) return false;\n  }\n  return undefined;\n};\nconst ALIASES = { preapproved: 'pre_approved', pre_approval: 'pre_approved', prequalified: 'pre_approved', single_family_home: 'single_family',\n  house: 'single_family', condominium: 'condo', townhome: 'townhouse', multifamily: 'multi_family', immediately: 'asap',\n  '1_month': 'within_1_month', '3_months': '1_3_months', '6_months': '3_6_months', browsing: 'just_browsing' };\nconst toEnum = (k, v) => {\n  let s = toStr(v)?.toLowerCase().replace(/[\\s-]+/g, '_');\n  if (s && ALIASES[s]) s = ALIASES[s];\n  return s && ENUMS[k].includes(s) ? s : undefined;\n};\n\nconst beds = toNum(args.bedrooms);\nconst candidate = {\n  phone,\n  full_name: toStr(args.full_name),\n  email: toStr(args.email)?.toLowerCase(),\n  location_pref: toStr(args.location_pref),\n  property_type: toEnum('property_type', args.property_type),\n  bedrooms: beds === undefined ? undefined : Math.round(beds),\n  budget_min: toNum(args.budget_min),\n  budget_max: toNum(args.budget_max),\n  timeline: toEnum('timeline', args.timeline),\n  financing_status: toEnum('financing_status', args.financing_status),\n  has_other_agent: toBool(args.has_other_agent),\n  first_time_buyer: toBool(args.first_time_buyer),\n  must_haves: toStr(args.must_haves),\n  notes: toStr(args.notes),\n};\n// Only send fields the caller actually provided, so an upsert never wipes existing data.\nconst payload = {};\nfor (const [k, v] of Object.entries(candidate)) if (v !== undefined) payload[k] = v;\npayload.last_call_at = new Date().toISOString();\n\nreturn [{ json: { toolCallId: tc.id, phone, payload } }];\n"
+      },
+      "id": "e08b686e-a22b-4b85-9919-c2983e43723b",
+      "name": "Parse Upsert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ntwkgzggijfwannzrmyt.supabase.co/rest/v1/buyer_leads?on_conflict=phone",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.payload) }}",
+        "options": {}
+      },
+      "id": "17993e74-cbbd-4a1a-9155-427bec8d21f5",
+      "name": "Supabase Upsert Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        592
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "lCQ9iLD7Lfi03HbQ",
+          "name": "Supabase account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst ctx = $('Parse Upsert').first().json;\nif (!row || !row.id) {\n  return [{ json: { toolCallId: ctx.toolCallId, result: 'Save failed. Do not mention this to the caller. Continue the conversation normally and keep asking questions.' } }];\n}\nconst KEY = ['location_pref', 'property_type', 'budget_max', 'timeline', 'financing_status', 'has_other_agent'];\nconst OPTIONAL = ['full_name', 'bedrooms'];\nconst isMissing = f => row[f] === null || row[f] === undefined || row[f] === '';\nconst missingKey = KEY.filter(isMissing);\nconst missingOpt = OPTIONAL.filter(isMissing);\n\nlet next;\nif (missingKey.length) next = `continue_questions (still need: ${[...missingKey, ...missingOpt].join(', ')})`;\nelse if (row.tier === 'hot') next = 'offer_booking';\nelse next = 'wrap_up_no_booking';\n\nreturn [{ json: { toolCallId: ctx.toolCallId, result: `Saved. tier=${row.tier}. NEXT=${next}` } }];\n"
+      },
+      "id": "420aeb63-115b-455b-88fc-7a67741da16a",
+      "name": "Shape Upsert Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.toolCallId, result: $json.result }] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "58992f3e-9bc7-433f-8844-10c643087aed",
+      "name": "Respond Upsert",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### B. check_availability\nGoogle Calendar freeBusy -> up to 3 open 30-min slots (Mon-Fri 9-5 ET, 3h notice). Edit hours in the 'Compute Slots' node.",
+        "height": 110,
+        "width": 520,
+        "color": 4
+      },
+      "id": "199dd8a1-c0a9-4fde-9d5c-1c7c6618e3df",
+      "name": "Note 7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4416,
+        1232
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi/check-availability",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3bca717d-c259-4127-8961-2bb6a6e2cf27",
+      "name": "Webhook Availability",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        304,
+        976
+      ],
+      "webhookId": "0cdbee1b-cddf-4599-a6c8-283221a9a096",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bkLq1UUmIZceEbM1",
+          "name": "X-api-secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body ?? input;\nconst msg = body.message ?? {};\nconst call = msg.call ?? {};\nconst tc = (msg.toolCallList && msg.toolCallList[0]) || (msg.toolCalls && msg.toolCalls[0]) || {};\nlet args = tc.arguments ?? tc.function?.arguments ?? {};\nif (typeof args === 'string') { try { args = JSON.parse(args); } catch (e) { args = {}; } }\nconst toStr = v => (typeof v === 'string' && v.trim() !== '') ? v.trim() : undefined;\nconst phone = String(call.customer?.number || args.phone || `web-${String(call.id || 'test').slice(0, 8)}`).replace(/\\s+/g, '');\n\nconst TZ = 'America/New_York';\nconst MIN_NOTICE_HOURS = 3;\n\nlet from = DateTime.now().setZone(TZ).plus({ hours: MIN_NOTICE_HOURS });\nfrom = from.plus({ minutes: (30 - (from.minute % 30)) % 30 }).set({ second: 0, millisecond: 0 });\n\nconst pref = toStr(args.preferred_day);\nif (pref && /^\\d{4}-\\d{2}-\\d{2}$/.test(pref)) {\n  const p = DateTime.fromISO(pref, { zone: TZ }).startOf('day');\n  if (p.isValid && p > from) from = p;\n}\nconst to = from.startOf('day').plus({ days: 8 });\n\nreturn [{ json: { toolCallId: tc.id, timeMin: from.toISO(), timeMax: to.toISO() } }];\n"
+      },
+      "id": "8f6a2bdd-f5e1-42c2-acbe-9453e5499b64",
+      "name": "Parse Availability",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/freeBusy",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ timeMin: $json.timeMin, timeMax: $json.timeMax, timeZone: 'America/New_York', items: [{ id: 'primary' }] }) }}",
+        "options": {}
+      },
+      "id": "58474059-7954-4609-a2d1-aed7bfdb66a2",
+      "name": "Google FreeBusy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        976
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "LIa1LOftnfxiQxA7",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const TZ = 'America/New_York';\nconst START_H = 9, END_H = 17, SLOT_MIN = 30, MAX_OFFERS = 3;   // Mon-Fri 9am-5pm ET, 30-min calls\n\nconst ctx = $('Parse Availability').first().json;\nconst res = $input.first().json;\nconst cal = Object.values(res.calendars || {})[0];\nif (!cal || cal.errors || res.error) {\n  return [{ json: { toolCallId: ctx.toolCallId, result: 'Calendar unavailable. Do not offer any times. Tell the caller a team member will call them shortly to schedule, and note that with upsert_lead.' } }];\n}\nconst busy = (cal.busy || []).map(b => ({ s: DateTime.fromISO(b.start), e: DateTime.fromISO(b.end) }));\n\nconst from = DateTime.fromISO(ctx.timeMin, { zone: TZ });\nconst to = DateTime.fromISO(ctx.timeMax, { zone: TZ });\nconst slots = [];\nfor (let d = from.startOf('day'); d < to; d = d.plus({ days: 1 })) {\n  if (d.weekday > 5) continue;\n  const dayEnd = d.set({ hour: END_H, minute: 0 });\n  for (let t = d.set({ hour: START_H, minute: 0 }); t.plus({ minutes: SLOT_MIN }) <= dayEnd; t = t.plus({ minutes: SLOT_MIN })) {\n    const e = t.plus({ minutes: SLOT_MIN });\n    if (t >= from && !busy.some(b => t < b.e && e > b.s)) slots.push(t);\n  }\n}\n\n// Spread offers: first slot of each of the next days, then later slots if fewer than 3 days are open.\nconst byDay = {};\nfor (const s of slots) (byDay[s.toISODate()] ??= []).push(s);\nconst days = Object.keys(byDay).sort();\nconst picked = [];\nfor (let round = 0; round < 6 && picked.length < MAX_OFFERS; round++) {\n  for (const k of days) {\n    const s = byDay[k][round * 3];\n    if (s && picked.length < MAX_OFFERS) picked.push(s);\n  }\n}\npicked.sort((a, b) => a.toMillis() - b.toMillis());\n\nif (!picked.length) {\n  return [{ json: { toolCallId: ctx.toolCallId, result: 'No openings in the next week. Tell the caller a team member will call them shortly to schedule, and note that with upsert_lead.' } }];\n}\nconst list = picked.map((s, i) => `${i + 1}) ${s.toFormat(\"cccc, LLLL d 'at' h:mm a\")} [start_time=${s.toISO()}]`).join('; ');\nreturn [{ json: { toolCallId: ctx.toolCallId, result: `Available times (Eastern): ${list}. Read only the day and time to the caller. Pass the exact start_time value to book_appointment.` } }];\n"
+      },
+      "id": "dd7645d9-14e8-45c7-8a16-49d43fea604c",
+      "name": "Compute Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.toolCallId, result: $json.result }] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "4133bde3-a945-421e-8036-92399a42ff32",
+      "name": "Respond Availability",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1264,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### C. book_appointment\nRe-checks the slot is still free -> creates Google Calendar event (invite emailed if lead gave an email) -> marks lead booked -> saves appointment -> posts hot-lead details to Slack -> tells the agent.",
+        "height": 120,
+        "width": 820,
+        "color": 4
+      },
+      "id": "f305fcf2-5b1d-48a1-b790-64babf5f4431",
+      "name": "Note 13",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4528,
+        1536
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi/book-appointment",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a15174c6-8abf-43a9-b1fa-4d837875179b",
+      "name": "Webhook Booking",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        304,
+        1392
+      ],
+      "webhookId": "3952ffb1-ebea-4fe9-b057-ee6a40f99b8c",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bkLq1UUmIZceEbM1",
+          "name": "X-api-secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body ?? input;\nconst msg = body.message ?? {};\nconst call = msg.call ?? {};\nconst tc = (msg.toolCallList && msg.toolCallList[0]) || (msg.toolCalls && msg.toolCalls[0]) || {};\nlet args = tc.arguments ?? tc.function?.arguments ?? {};\nif (typeof args === 'string') { try { args = JSON.parse(args); } catch (e) { args = {}; } }\nconst toStr = v => (typeof v === 'string' && v.trim() !== '') ? v.trim() : undefined;\nconst phone = String(call.customer?.number || args.phone || `web-${String(call.id || 'test').slice(0, 8)}`).replace(/\\s+/g, '');\n\nlet start = DateTime.fromISO(String(args.start_time || ''), { setZone: true });\nconst invalid = !start.isValid;\nif (invalid) start = DateTime.now();\nconst end = start.plus({ minutes: 30 });\nreturn [{ json: {\n  toolCallId: tc.id, phone, invalid,\n  start: start.toISO(), end: end.toISO(),\n  full_name: toStr(args.full_name), email: toStr(args.email)?.toLowerCase(),\n} }];\n"
+      },
+      "id": "feb48ca7-8b97-4c9c-a18a-709f0a999b10",
+      "name": "Parse Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://ntwkgzggijfwannzrmyt.supabase.co/rest/v1/buyer_leads?phone=eq.{{ encodeURIComponent($json.phone) }}&select=*",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {}
+      },
+      "id": "f54e04e9-71d9-4e59-922a-7e07fef516ac",
+      "name": "Get Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        1392
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "MciEL3C0Gjwb2jHY",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/freeBusy",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ timeMin: $('Parse Booking').first().json.start, timeMax: $('Parse Booking').first().json.end, timeZone: 'America/New_York', items: [{ id: 'primary' }] }) }}",
+        "options": {}
+      },
+      "id": "61b7d9b5-1202-4b75-9690-6f93106cc9ae",
+      "name": "Google FreeBusy Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        1392
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "LIa1LOftnfxiQxA7",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Parse Booking').first().json;\nconst leadItem = $('Get Lead').first()?.json || {};\nconst res = $input.first().json;\nconst cal = Object.values(res.calendars || {})[0];\n\nlet problem = null;\nif (ctx.invalid) problem = 'invalid';\nelse if (!cal || cal.errors || res.error) problem = 'calendar_error';\nelse if ((cal.busy || []).length) problem = 'taken';\n\nlet result = null;\nif (problem === 'taken' || problem === 'invalid') result = 'That time is no longer available. Apologize briefly and call check_availability again to offer new times.';\nelse if (problem === 'calendar_error') result = 'Booking system unavailable. Do not retry. Tell the caller a team member will call them shortly to schedule, and note that with upsert_lead.';\n\nreturn [{ json: { ...ctx, lead: leadItem.id ? leadItem : null, problem, result } }];\n"
+      },
+      "id": "c843ff1d-fdf5-4f76-a919-d8e672a51cc9",
+      "name": "Conflict Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "735bb82d-0a0d-48ee-9a8b-cb8fbfe5ba71",
+              "leftValue": "={{ !!$json.problem }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b38ae890-4a23-4565-995d-9b7bda63829f",
+      "name": "Problem?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1504,
+        1392
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const TZ = 'America/New_York';\nconst LABEL = {\n  timeline: { asap: 'ASAP', within_1_month: 'within a month', '1_3_months': '1-3 months', '3_6_months': '3-6 months', '6_plus_months': '6+ months', just_browsing: 'just browsing' },\n  financing_status: { cash: 'cash buyer', pre_approved: 'pre-approved', in_process: 'working with a lender', not_started: 'not started', unknown: 'unknown' },\n  property_type: { single_family: 'single-family home', condo: 'condo', townhouse: 'townhouse', multi_family: 'multi-family', land: 'land', other: 'property' },\n};\nconst lab = (k, v) => (v ? (LABEL[k][v] || String(v).replace(/_/g, ' ')) : 'not given');\n\nconst c = $input.first().json;\nconst l = c.lead || {};\nconst name = c.full_name || l.full_name || 'Buyer';\nconst email = c.email || l.email;\nconst money = n => (n ? '$' + Number(n).toLocaleString('en-US') : 'n/a');\nconst desc = [\n  'Buyer lead from the AI phone agent',\n  `Phone: ${c.phone}`,\n  email ? `Email: ${email}` : null,\n  `Looking for: ${l.bedrooms ? l.bedrooms + '-bed ' : ''}${lab('property_type', l.property_type)} in ${l.location_pref || 'n/a'}`,\n  `Budget: up to ${money(l.budget_max)}`,\n  `Timeline: ${lab('timeline', l.timeline)}`,\n  `Financing: ${lab('financing_status', l.financing_status)}`,\n  l.must_haves ? `Must-haves: ${l.must_haves}` : null,\n  l.notes ? `Notes: ${l.notes}` : null,\n].filter(Boolean).join('\\n');\n\nconst wants = [l.bedrooms ? `${l.bedrooms}-bed` : null, l.property_type ? lab('property_type', l.property_type) : null, l.location_pref ? `in ${l.location_pref}` : null].filter(Boolean).join(' ');\n\nconst eventBody = {\n  summary: `Buyer call - ${name}${wants ? ' - ' + wants : ''}`,\n  description: desc,\n  start: { dateTime: c.start, timeZone: TZ },\n  end: { dateTime: c.end, timeZone: TZ },\n  reminders: { useDefault: true },\n};\nif (email) eventBody.attendees = [{ email }];\nreturn [{ json: { ...c, name, email, eventBody } }];\n"
+      },
+      "id": "ce1bfd30-63df-4be8-8e54-0472832cf0c9",
+      "name": "Build Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleCalendarOAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.eventBody) }}",
+        "options": {}
+      },
+      "id": "7869e9f1-48d5-4d79-95bd-4729b121445e",
+      "name": "Google Create Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1984,
+        1520
+      ],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "LIa1LOftnfxiQxA7",
+          "name": "Google Calendar account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7550ed97-7aba-4f69-aef4-3a6f8227f14d",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8e5f4213-b7cc-4806-a448-4eaa73c0a560",
+      "name": "Event Created?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const TZ = 'America/New_York';\nconst LABEL = {\n  timeline: { asap: 'ASAP', within_1_month: 'within a month', '1_3_months': '1-3 months', '3_6_months': '3-6 months', '6_plus_months': '6+ months', just_browsing: 'just browsing' },\n  financing_status: { cash: 'cash buyer', pre_approved: 'pre-approved', in_process: 'working with a lender', not_started: 'not started', unknown: 'unknown' },\n  property_type: { single_family: 'single-family home', condo: 'condo', townhouse: 'townhouse', multi_family: 'multi-family', land: 'land', other: 'property' },\n};\nconst lab = (k, v) => (v ? (LABEL[k][v] || String(v).replace(/_/g, ' ')) : 'not given');\n\nconst ev = $input.first().json;\nconst c = $('Build Event').first().json;\nconst l = c.lead || {};\n\nconst when = DateTime.fromISO(c.start, { setZone: true }).setZone(TZ).toFormat(\"ccc, LLL d 'at' h:mm a\") + ' ET';\nconst money = n => (n ? '$' + Number(n).toLocaleString('en-US') : null);\nconst budget = l.budget_min && l.budget_max ? `${money(l.budget_min)} - ${money(l.budget_max)}` : (money(l.budget_max) ? `up to ${money(l.budget_max)}` : 'not given');\nconst agent = l.has_other_agent === true ? 'Yes' : l.has_other_agent === false ? 'No' : 'unknown';\nconst wants = `${l.bedrooms ? l.bedrooms + '-bed ' : ''}${lab('property_type', l.property_type)} in ${l.location_pref || 'area not given'}`;\n\nconst owner = ev.organizer?.email || ev.creator?.email;\nconst link = ev.htmlLink && owner ? `${ev.htmlLink}${ev.htmlLink.includes('?') ? '&' : '?'}authuser=${encodeURIComponent(owner)}` : ev.htmlLink;\n\nconst slackText = [\n  ':fire: *Hot lead - appointment booked*',\n  `*${c.name}*  |  ${c.phone}${c.email ? '  |  ' + c.email : ''}`,\n  `*Looking to buy:* ${wants}`,\n  `*Budget:* ${budget}   *Timeline:* ${lab('timeline', l.timeline)}   *Financing:* ${lab('financing_status', l.financing_status)}   *Other agent:* ${agent}`,\n  l.must_haves ? `*Must-haves:* ${l.must_haves}` : null,\n  l.notes ? `*Notes:* ${l.notes}` : null,\n  `*Appointment:* ${when}${link ? `  (<${link}|open in Google Calendar>)` : ''}`,\n  `*Lead score:* ${l.lead_score ?? 'n/a'}/100`,\n].filter(Boolean).join('\\n');\n\nconst leadPatch = { status: 'appointment_booked' };\nif (c.full_name) leadPatch.full_name = c.full_name;\nif (c.email) leadPatch.email = c.email;\n\nconst appointment = {\n  lead_id: l.id ?? null, phone: c.phone, start_time: c.start, end_time: c.end,\n  google_event_id: ev.id, calendar_link: ev.htmlLink ?? null,\n};\nreturn [{ json: { toolCallId: c.toolCallId, phone: c.phone, when, leadPatch, appointment, slackText } }];\n"
+      },
+      "id": "176b9cd2-ed71-4fa6-ac59-007f4e617d0e",
+      "name": "Prepare Post-Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        1424
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=__SUPABASE_URL__/rest/v1/buyer_leads?phone=eq.{{ encodeURIComponent($json.phone) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.leadPatch) }}",
+        "options": {}
+      },
+      "id": "416a7d0b-4469-41cd-8a23-0f30f319aa6a",
+      "name": "Mark Lead Booked",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2704,
+        1424
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "lCQ9iLD7Lfi03HbQ",
+          "name": "Supabase account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ntwkgzggijfwannzrmyt.supabase.co/rest/v1/appointments",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Prepare Post-Booking').first().json.appointment) }}",
+        "options": {}
+      },
+      "id": "3a0e1be3-d792-468e-aa75-64fd02a750af",
+      "name": "Insert Appointment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2944,
+        1424
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "lCQ9iLD7Lfi03HbQ",
+          "name": "Supabase account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0AP9336Y5N",
+          "mode": "list",
+          "cachedResultName": "all-supportteam"
+        },
+        "text": "={{ $('Prepare Post-Booking').first().json.slackText }}",
+        "otherOptions": {}
+      },
+      "id": "2df53159-b457-441d-874e-87c4e73915da",
+      "name": "Slack Hot Lead Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        3184,
+        1424
+      ],
+      "webhookId": "dfa34ee9-6512-4003-b2aa-3ae5be2c1eed",
+      "credentials": {
+        "slackApi": {
+          "id": "uEiDQinmVMw0tEvP",
+          "name": "Slack account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $('Prepare Post-Booking').first().json;\nreturn [{ json: { toolCallId: p.toolCallId, result: `Booked for ${p.when}. Confirm the day and time to the caller and tell them an advisor will call them then.` } }];\n"
+      },
+      "id": "eab93573-b349-44d6-a442-e57b401a19a2",
+      "name": "Booking Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3424,
+        1424
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $('Build Event').first().json;\nreturn [{ json: { toolCallId: c.toolCallId, result: 'Booking failed. Do not retry. Tell the caller a team member will call them shortly to schedule, and note that with upsert_lead.' } }];\n"
+      },
+      "id": "5fa9a3e0-2d1a-4c93-ad85-7ac36b511708",
+      "name": "Booking Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        1632
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.toolCallId, result: $json.result }] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "3aafd77b-5d02-43ea-8646-5f8dc26c2329",
+      "name": "Respond Booking",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3664,
+        1248
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### D. end-of-call report\nStores summary, transcript, recording URL, duration and cost for every call (warm/cold leads included).",
+        "height": 110,
+        "width": 520,
+        "color": 4
+      },
+      "id": "a837944a-477f-4555-9279-993b304de91a",
+      "name": "Note 30",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4480,
+        1808
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi/end-of-call",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "25b0abbf-8971-42ef-b654-293964d022a9",
+      "name": "Webhook End Of Call",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        304,
+        2000
+      ],
+      "webhookId": "92f8687a-bbc6-4734-9dc5-92a7dfecbfcb",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bkLq1UUmIZceEbM1",
+          "name": "X-api-secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body ?? input;\nconst m = body.message ?? {};\nconst call = m.call ?? {};\nconst row = {\n  vapi_call_id: call.id ?? m.callId ?? null,\n  phone: call.customer?.number ?? null,\n  started_at: m.startedAt ?? call.startedAt ?? null,\n  ended_at: m.endedAt ?? call.endedAt ?? null,\n  duration_seconds: m.durationSeconds != null ? Math.round(m.durationSeconds) : null,\n  ended_reason: m.endedReason ?? call.endedReason ?? null,\n  summary: m.analysis?.summary ?? m.summary ?? null,\n  transcript: m.artifact?.transcript ?? m.transcript ?? null,\n  recording_url: m.artifact?.recordingUrl ?? m.recordingUrl ?? null,\n  cost: m.cost ?? null,\n};\nreturn [{ json: { row } }];\n"
+      },
+      "id": "77ab6e7a-911c-434f-bf17-e3f4f70b877f",
+      "name": "Parse End Of Call",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        2000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ntwkgzggijfwannzrmyt.supabase.co/rest/v1/call_logs?on_conflict=vapi_call_id",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.row) }}",
+        "options": {}
+      },
+      "id": "f0457982-4d60-43ca-b62b-1bfab6c82152",
+      "name": "Save Call Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        2000
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "lCQ9iLD7Lfi03HbQ",
+          "name": "Supabase account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "925b6019-b79b-4e24-8c58-c7a035c19ba7",
+      "name": "Respond End Of Call",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        2000
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi/upsert-lead",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "fdac27c9-0d99-4d8f-aea1-0210d9f294a8",
+      "name": "Webhook Upsert",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        304,
+        592
+      ],
+      "webhookId": "aaa7b392-2d94-4ce1-8eff-1fec637b0411",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "bkLq1UUmIZceEbM1",
+          "name": "X-api-secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "aiautomations530@gmail.com",
+          "mode": "list",
+          "cachedResultName": "aiautomations530@gmail.com"
+        },
+        "start": "={{ $json.start }}",
+        "end": "={{ $json.end }}",
+        "additionalFields": {
+          "description": "={{ $json.eventBody.description }}",
+          "summary": "={{ $json.eventBody.summary }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        3312,
+        2256
+      ],
+      "id": "aa84e3b4-102c-489d-bc3b-3585219911b8",
+      "name": "Create an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "LIa1LOftnfxiQxA7",
+          "name": "Google Calendar account"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "pinData": {
+    "Webhook End Of Call": [
+      {
+        "json": {
+          "message": {
+            "type": "end-of-call-report",
+            "endedReason": "customer-ended-call",
+            "durationSeconds": 141.6,
+            "cost": 0.31,
+            "startedAt": "2026-09-30T10:00:00.000Z",
+            "endedAt": "2026-09-30T10:02:21.000Z",
+            "analysis": {
+              "summary": "Dana Lee wants a 3-bed single-family home in Tampa, up to $520k. Booked an advisor call."
+            },
+            "artifact": {
+              "transcript": "AI: Thanks for calling. User: Hi, I'm looking to buy a home in Tampa.",
+              "recordingUrl": "https://example.com/recording.wav"
+            },
+            "call": {
+              "id": "call-test-9",
+              "customer": {
+                "number": "+18135550101"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Parse Upsert": {
+      "main": [
+        [
+          {
+            "node": "Supabase Upsert Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Upsert Lead": {
+      "main": [
+        [
+          {
+            "node": "Shape Upsert Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Upsert Result": {
+      "main": [
+        [
+          {
+            "node": "Respond Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Availability": {
+      "main": [
+        [
+          {
+            "node": "Parse Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Availability": {
+      "main": [
+        [
+          {
+            "node": "Google FreeBusy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google FreeBusy": {
+      "main": [
+        [
+          {
+            "node": "Compute Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Slots": {
+      "main": [
+        [
+          {
+            "node": "Respond Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Booking": {
+      "main": [
+        [
+          {
+            "node": "Parse Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Booking": {
+      "main": [
+        [
+          {
+            "node": "Get Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Lead": {
+      "main": [
+        [
+          {
+            "node": "Google FreeBusy Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google FreeBusy Check": {
+      "main": [
+        [
+          {
+            "node": "Conflict Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conflict Check": {
+      "main": [
+        [
+          {
+            "node": "Problem?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Problem?": {
+      "main": [
+        [
+          {
+            "node": "Respond Booking",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Event": {
+      "main": [
+        [
+          {
+            "node": "Google Create Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Create Event": {
+      "main": [
+        [
+          {
+            "node": "Event Created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Event Created?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Post-Booking",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Booking Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Post-Booking": {
+      "main": [
+        [
+          {
+            "node": "Mark Lead Booked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Lead Booked": {
+      "main": [
+        [
+          {
+            "node": "Insert Appointment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Appointment": {
+      "main": [
+        [
+          {
+            "node": "Slack Hot Lead Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Hot Lead Alert": {
+      "main": [
+        [
+          {
+            "node": "Booking Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking Result": {
+      "main": [
+        [
+          {
+            "node": "Respond Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking Failed": {
+      "main": [
+        [
+          {
+            "node": "Respond Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook End Of Call": {
+      "main": [
+        [
+          {
+            "node": "Parse End Of Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse End Of Call": {
+      "main": [
+        [
+          {
+            "node": "Save Call Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Call Log": {
+      "main": [
+        [
+          {
+            "node": "Respond End Of Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Upsert": {
+      "main": [
+        [
+          {
+            "node": "Parse Upsert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1842d518-b5ce-49e9-bca3-3318b92f0fef",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2366a041569ff34fcf12a0a2092fd4e7c08697b8afa808acfe3b171961f16201"
+  },
+  "nodeGroups": [],
+  "id": "ntGRqIz27mNQ79Bg",
+  "tags": []
+}
