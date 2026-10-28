@@ -82,7 +82,7 @@ export const Hero: React.FC<HeroProps> = ({
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-neutral-50 tracking-tight leading-[1.14]">
-              Turning Repetitive Work into Intelligent Workflows.
+              I build AI automations that save businesses time.
             </h1>
 
             {/* Concise Supporting Text */}

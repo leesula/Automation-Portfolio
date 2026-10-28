@@ -3,7 +3,7 @@ import { Project, ServiceItem, WorkProcessStep } from '../types/portfolio';
 export const siteConfig = {
   builderName: "Sudha Leela",
   roleTitle: "AI Automation Builder & Workflow Architect",
-  tagline: "Turning Repetitive Business Processes into Intelligent, Self-Healing Systems",
+  tagline: "I build AI automations that save businesses time.",
   location: "Global / Remote",
   email: "sudhaleela222@gmail.com",
   calLink: "https://cal.com/chweet-girl-bsfmon/",
