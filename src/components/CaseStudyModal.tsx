@@ -15,7 +15,8 @@ import {
   ArrowUpRight,
   Briefcase,
   Code2,
-  Sparkles
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 
 interface CaseStudyModalProps {
@@ -101,31 +102,46 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
             </p>
           </div>
 
-          {/* Level Switcher: Business Overview vs Technical Breakdown */}
-          <div className="flex items-center p-1.5 bg-neutral-900 rounded-xl border border-neutral-800 w-fit">
-            <button
-              onClick={() => setCaseStudyLevel('business')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-                caseStudyLevel === 'business'
-                  ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-neutral-700'
-                  : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              <Briefcase className="w-4 h-4 text-indigo-400" />
-              <span>Level 1: Business Overview</span>
-            </button>
+          {/* Level Switcher: Business Overview vs Technical Breakdown + Live Demo Action */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center p-1.5 bg-neutral-900 rounded-xl border border-neutral-800 w-fit">
+              <button
+                onClick={() => setCaseStudyLevel('business')}
+                className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+                  caseStudyLevel === 'business'
+                    ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-neutral-700'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                <Briefcase className="w-4 h-4 text-indigo-400" />
+                <span>Level 1: Business Overview</span>
+              </button>
 
-            <button
-              onClick={() => setCaseStudyLevel('technical')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-                caseStudyLevel === 'technical'
-                  ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-neutral-700'
-                  : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              <Code2 className="w-4 h-4 text-indigo-400" />
-              <span>Level 2: Technical Breakdown</span>
-            </button>
+              <button
+                onClick={() => setCaseStudyLevel('technical')}
+                className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+                  caseStudyLevel === 'technical'
+                    ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-neutral-700'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                <Code2 className="w-4 h-4 text-indigo-400" />
+                <span>Level 2: Technical Breakdown</span>
+              </button>
+            </div>
+
+            {project.liveDemoUrl && (
+              <a
+                href={project.liveDemoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900/90 border border-emerald-700/80 rounded-xl transition-all shadow-sm hover:shadow-emerald-500/20 cursor-pointer group"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>{project.liveDemoLabel || 'Launch Live Production CRM'}</span>
+                <ExternalLink className="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </a>
+            )}
           </div>
 
           {/* ======================================================== */}
@@ -246,6 +262,21 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
                             <span className="font-semibold text-emerald-200 block mb-0.5">How It Helps Your Business:</span>
                             {output.businessBenefit}
                           </div>
+
+                          {output.liveUrl && (
+                            <div className="pt-1">
+                              <a
+                                href={output.liveUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-sm hover:shadow-emerald-500/20 cursor-pointer"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                                <span>{output.actionLabel || 'Launch Live Deliverable'}</span>
+                                <ExternalLink className="w-3.5 h-3.5 text-white" />
+                              </a>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -302,14 +333,31 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
                           </p>
                         </div>
 
-                        <div className="p-3 rounded-lg bg-emerald-950/20 border border-emerald-900/40 text-xs text-emerald-300/90 leading-relaxed">
-                          <div className="flex items-center gap-1.5 font-semibold text-emerald-400 mb-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                            <span>How It Helps Your Business:</span>
+                        <div className="space-y-2.5">
+                          <div className="p-3 rounded-lg bg-emerald-950/20 border border-emerald-900/40 text-xs text-emerald-300/90 leading-relaxed">
+                            <div className="flex items-center gap-1.5 font-semibold text-emerald-400 mb-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span>How It Helps Your Business:</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-300">
+                              {output.businessBenefit}
+                            </p>
                           </div>
-                          <p className="text-[11px] text-neutral-300">
-                            {output.businessBenefit}
-                          </p>
+
+                          {output.liveUrl && (
+                            <div className="pt-1">
+                              <a
+                                href={output.liveUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all shadow-sm hover:shadow-emerald-500/20 cursor-pointer"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                                <span>{output.actionLabel || 'Launch Live Deliverable'}</span>
+                                <ExternalLink className="w-3.5 h-3.5 text-white" />
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

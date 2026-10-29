@@ -750,17 +750,27 @@ export const projectsData: Project[] = [
     category: "Sales & CRM Operations",
     tagline: "An automated sales system that captures form inquiries, scores leads objectively, sends personalized follow-ups with 1-click unsubscribes, and syncs booked meetings.",
     problem: "Inbound leads arrived unverified into disjointed spreadsheets, resulting in slow response times, missed enterprise opportunities, lack of follow-up consistency, and zero automated CRM sync when prospects booked meetings.",
-    solution: "Architected a synchronized 7-workflow automation architecture in n8n backed by Supabase PostgreSQL. The system normalizes form data, prevents duplicate submissions, scores prospects on a 100-point scale across 3 tiers, triggers personalized Gmail follow-ups with secure cryptographic unsubscribes, updates lead state upon incoming reply detection, and auto-links Cal.com bookings.",
+    solution: "Architected a synchronized 7-workflow automation architecture in n8n backed by Supabase PostgreSQL and a live interactive CRM dashboard. The system normalizes form data, prevents duplicate submissions, scores prospects on a 100-point scale across 3 tiers, triggers personalized Gmail follow-ups with secure cryptographic unsubscribes, updates lead state upon incoming reply detection, and auto-links Cal.com bookings.",
     implementationStatus: "Configured & Tested",
     workflowCount: 7,
+    liveDemoUrl: "https://sales-pipeline-automation-crm.vercel.app/",
+    liveDemoLabel: "Live CRM Dashboard",
     clientWorkflowSteps: [
       { step: 1, title: "Web Form Submission", description: "Captures raw inquiries from website forms with strict validation and sanitization.", tool: "Tally / Webhook" },
       { step: 2, title: "Lead Qualification & Scoring", description: "Computes 100-point score based on budget, company size, and job role to assign tiers.", tool: "Scoring Engine" },
-      { step: 3, title: "CRM Database Sync", description: "Stores clean lead records with deduplication to prevent duplicate outreach.", tool: "Supabase CRM" },
+      { step: 3, title: "CRM Database & Live Dashboard Sync", description: "Stores clean lead records in Supabase and renders them instantly on the live sales pipeline CRM.", tool: "Supabase & Web CRM" },
       { step: 4, title: "Personalized Email Sequence", description: "Dispatches tailored outreach via Gmail with secure 1-click unsubscribe links.", tool: "Gmail OAuth2" },
       { step: 5, title: "Reply Tracking & Meeting Sync", description: "Detects prospect replies to notify reps, and updates CRM status when meetings are booked.", tool: "Cal.com & Slack" }
     ],
     keyOutputs: [
+      {
+        title: "Live Interactive Sales Pipeline CRM Dashboard",
+        category: "Live Production CRM",
+        description: "A production web CRM dashboard deployed on Vercel and connected directly to the automated sales pipeline database. Allows sales teams to visually inspect inbound leads, real-time qualification scores, deal tiers, active email sequences, reply statuses, and booked meetings without digging through raw logs.",
+        businessBenefit: "Gives business owners and sales reps an immediate, single-pane-of-glass command center to track pipeline velocity, monitor deals in real time, and act on hot leads the second they engage.",
+        liveUrl: "https://sales-pipeline-automation-crm.vercel.app/",
+        actionLabel: "Launch Live CRM Dashboard"
+      },
       {
         title: "Deterministic 100-Point Lead Qualification & Tiering Engine",
         category: "Lead Pipeline",
@@ -799,6 +809,7 @@ export const projectsData: Project[] = [
       }
     ],
     techStack: [
+      { name: "Live Web CRM", role: "Interactive Pipeline & Deal Dashboard (Vercel)" },
       { name: "n8n", role: "Workflow Orchestrator & Logic Engine" },
       { name: "Supabase", role: "Relational Storage (leads, raw_submissions, meetings, error_logs)" },
       { name: "Gmail OAuth2", role: "Transactional Welcome & Follow-up Sequences" },

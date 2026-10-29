@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, ArrowUpRight, PhoneCall, MessageSquare, Workflow, Calendar, Database, Bell, CheckCircle2, Bot } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, PhoneCall, MessageSquare, Workflow, Calendar, Database, Bell, CheckCircle2, Bot, ExternalLink } from 'lucide-react';
 import { Project } from '../types/portfolio';
 
 interface HeroProps {
@@ -249,11 +249,24 @@ export const Hero: React.FC<HeroProps> = ({
                 </div>
               </div>
 
-              {/* Destination Match: View Case Study opens THIS exact project */}
+              {/* Destination Match: View Case Study opens THIS exact project + Live Demo Link */}
               <div className="pt-3 border-t border-neutral-800/80 flex items-center justify-between text-xs">
-                <span className="text-neutral-400">
-                  {activeProject.workflowCount} {activeProject.workflowCount === 1 ? 'Workflow' : 'Connected Workflows'}
-                </span>
+                {activeProject.liveDemoUrl ? (
+                  <a
+                    href={activeProject.liveDemoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-emerald-400 hover:text-emerald-300 font-medium inline-flex items-center gap-1.5 cursor-pointer transition-colors group"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Live Production CRM</span>
+                    <ExternalLink className="w-3 h-3 text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  </a>
+                ) : (
+                  <span className="text-neutral-400">
+                    {activeProject.workflowCount} {activeProject.workflowCount === 1 ? 'Workflow' : 'Connected Workflows'}
+                  </span>
+                )}
                 <button
                   onClick={() => onOpenCaseStudy(activeProject)}
                   className="text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1 cursor-pointer transition-colors"

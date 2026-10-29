@@ -85,6 +85,8 @@ export interface ProjectKeyOutput {
   category?: string;
   description: string;
   businessBenefit: string;
+  liveUrl?: string;
+  actionLabel?: string;
 }
 
 export interface Project {
@@ -106,6 +108,8 @@ export interface Project {
   transcriptionDialogue?: TranscriptionTurn[];
   clientWorkflowSteps?: ClientWorkflowStep[];
   keyOutputs?: ProjectKeyOutput[];
+  liveDemoUrl?: string;
+  liveDemoLabel?: string;
 }
 
 export interface ServiceItem {
