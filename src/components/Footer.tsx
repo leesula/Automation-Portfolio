@@ -1,7 +1,7 @@
 import React from 'react';
 import { siteConfig } from '../data/projects';
 import { ArrowUpRight, ArrowUp } from 'lucide-react';
-import { recordCallBookingToFirebase } from '../lib/firebase';
+import { recordCallBookingToSupabase } from '../lib/supabase';
 
 interface FooterProps {
   onNavigateSection: (sectionId: string) => void;
@@ -85,7 +85,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateSection }) => {
               target="_blank"
               rel="noreferrer"
               onClick={() => {
-                recordCallBookingToFirebase({
+                recordCallBookingToSupabase({
                   calLink: siteConfig.calLink,
                   source: 'footer_cal_link',
                   status: 'initiated'

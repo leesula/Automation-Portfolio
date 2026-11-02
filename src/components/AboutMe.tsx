@@ -1,7 +1,7 @@
 import React from 'react';
 import { siteConfig } from '../data/projects';
 import { Mail, Calendar, Github, Linkedin, CheckCircle2, ArrowUpRight } from 'lucide-react';
-import { recordCallBookingToFirebase } from '../lib/firebase';
+import { recordCallBookingToSupabase } from '../lib/supabase';
 
 export const AboutMe: React.FC = () => {
   return (
@@ -64,7 +64,7 @@ export const AboutMe: React.FC = () => {
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => {
-                  recordCallBookingToFirebase({
+                  recordCallBookingToSupabase({
                     calLink: siteConfig.calLink,
                     source: 'about_me_cal_link',
                     status: 'initiated'

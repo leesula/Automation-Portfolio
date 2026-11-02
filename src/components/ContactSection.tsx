@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { siteConfig } from '../data/projects';
 import { Mail, Calendar, ArrowRight, CheckCircle2, Copy, Send, Info, Loader2, Database } from 'lucide-react';
-import { saveInquiryToFirebase, recordCallBookingToFirebase } from '../lib/firebase';
+import { saveInquiryToSupabase, recordCallBookingToSupabase } from '../lib/supabase';
 
 interface ContactSectionProps {
   initialServiceInterest?: string;
@@ -19,7 +19,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ initialServiceIn
   const [copied, setCopied] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [firebaseSaved, setFirebaseSaved] = useState(false);
+  const [supabaseSaved, setSupabaseSaved] = useState(false);
   const [savedInquiryId, setSavedInquiryId] = useState<string>('');
   const [callBookedNotice, setCallBookedNotice] = useState(false);
 
@@ -45,7 +45,7 @@ ${requirements || 'N/A'}
 
   const handleBookCallClick = async (sourceTag = 'contact_section_cal_card') => {
     try {
-      await recordCallBookingToFirebase({
+      await recordCallBookingToSupabase({
         name: name || undefined,
         email: email || undefined,
         calLink: siteConfig.calLink,
@@ -63,8 +63,8 @@ ${requirements || 'N/A'}
     setIsSubmitting(true);
 
     try {
-      // 1. Store directly in Firebase Firestore
-      const result = await saveInquiryToFirebase({
+      // 1. Store directly in Supabase PostgreSQL database
+      const result = await saveInquiryToSupabase({
         name,
         email,
         company,
@@ -75,13 +75,13 @@ ${requirements || 'N/A'}
       });
 
       if (result.success) {
-        setFirebaseSaved(true);
+        setSupabaseSaved(true);
         setSavedInquiryId(result.id);
       }
 
-      // 2. If client preferred Cal.com Call, record the call booking intent in Firebase
+      // 2. If client preferred Cal.com Call, record the call booking intent in Supabase
       if (contactMethod === 'Cal.com Call') {
-        await recordCallBookingToFirebase({
+        await recordCallBookingToSupabase({
           name,
           email,
           calLink: siteConfig.calLink,
@@ -171,10 +171,10 @@ ${requirements || 'N/A'}
             <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800/80 text-xs text-neutral-400 space-y-1.5">
               <div className="flex items-center gap-2 text-emerald-400 font-semibold font-mono text-[11px]">
                 <Database className="w-3.5 h-3.5" />
-                <span>Connected to Firebase Firestore</span>
+                <span>Connected to Supabase Database</span>
               </div>
               <p className="leading-relaxed">
-                Every project inquiry and booked discovery call is securely stored in real-time in our Firebase database for prompt follow-up.
+                Every project inquiry and booked discovery call is securely stored in real-time in your integrated Supabase database for automated CRM synchronization and follow-up.
               </p>
             </div>
           </div>
@@ -300,7 +300,7 @@ ${requirements || 'N/A'}
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                        <span>Saving to Firebase...</span>
+                        <span>Saving to Supabase...</span>
                       </>
                     ) : (
                       <>
@@ -324,15 +324,15 @@ ${requirements || 'N/A'}
                   <div className="mt-4 p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/80 text-xs space-y-2">
                     <div className="flex items-center gap-2 text-emerald-300 font-semibold">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>Inquiry successfully saved to Firebase database!</span>
+                      <span>Inquiry successfully stored in Supabase database!</span>
                     </div>
                     {savedInquiryId && (
                       <p className="font-mono text-[11px] text-emerald-400/90 pl-6">
-                        Firestore Reference ID: <span className="text-white font-bold">{savedInquiryId}</span>
+                        Supabase Record ID: <span className="text-white font-bold">{savedInquiryId}</span>
                       </p>
                     )}
                     <p className="text-neutral-300 pl-6 leading-relaxed">
-                      Your inquiry has been stored in real time. We've also initiated an email draft so you have a direct receipt.
+                      Your inquiry has been stored in real time. We've also initiated an email draft so you have a direct confirmation receipt.
                     </p>
                     {contactMethod === 'Cal.com Call' && (
                       <div className="pl-6 pt-1">
@@ -355,7 +355,7 @@ ${requirements || 'N/A'}
                 {callBookedNotice && !submitted && (
                   <div className="mt-3 p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/80 text-xs text-indigo-300 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
-                    <span>Discovery call booking initiated and recorded in Firebase. Opening Cal.com...</span>
+                    <span>Discovery call booking initiated and recorded in Supabase. Opening Cal.com...</span>
                   </div>
                 )}
 
