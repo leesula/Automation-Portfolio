@@ -225,10 +225,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <button
-              onClick={() => handleNavSection('architecture')}
+              onClick={() => handleNavSection('how-it-helps')}
               className="hover:text-neutral-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
-              Architecture & Flows
+              How It Helps
             </button>
             <button
               onClick={() => handleNavSection('services')}
@@ -345,10 +345,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <button
-              onClick={() => handleNavSection('architecture')}
+              onClick={() => handleNavSection('how-it-helps')}
               className="text-left py-2.5 hover:text-white transition-colors cursor-pointer"
             >
-              Architecture & Flows
+              How It Helps
             </button>
             <button
               onClick={() => handleNavSection('services')}

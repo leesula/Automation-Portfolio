@@ -1,6 +1,7 @@
 import React from 'react';
 import { siteConfig } from '../data/projects';
 import { Mail, Calendar, Github, Linkedin, CheckCircle2, ArrowUpRight } from 'lucide-react';
+import { recordCallBookingToFirebase } from '../lib/firebase';
 
 export const AboutMe: React.FC = () => {
   return (
@@ -62,6 +63,13 @@ export const AboutMe: React.FC = () => {
                 href={siteConfig.calLink}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => {
+                  recordCallBookingToFirebase({
+                    calLink: siteConfig.calLink,
+                    source: 'about_me_cal_link',
+                    status: 'initiated'
+                  }).catch(console.error);
+                }}
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors"
               >
                 <Calendar className="w-3.5 h-3.5 text-indigo-400" />

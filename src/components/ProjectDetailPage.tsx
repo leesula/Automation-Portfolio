@@ -38,7 +38,6 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
   onSelectProject,
   onDiscussProject,
 }) => {
-  const [caseStudyLevel, setCaseStudyLevel] = useState<'business' | 'technical'>('business');
   const [activeDemoTab, setActiveDemoTab] = useState<'video' | 'transcript' | 'outputs'>('video');
 
   // Set default demo tab based on project capabilities
@@ -175,53 +174,34 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
           </div>
         </div>
 
-        {/* Level Switcher: Business Overview vs Technical Breakdown + Live Demo Action */}
-        <div className="flex flex-wrap items-center justify-between gap-4 p-2 rounded-2xl bg-neutral-900/60 border border-neutral-850">
-          <div className="flex items-center p-1 bg-neutral-950 rounded-xl border border-neutral-800">
-            <button
-              onClick={() => setCaseStudyLevel('business')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-                caseStudyLevel === 'business'
-                  ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-neutral-700'
-                  : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              <Briefcase className="w-4 h-4 text-indigo-400" />
-              <span>Level 1: Business Overview</span>
-            </button>
-
-            <button
-              onClick={() => setCaseStudyLevel('technical')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-                caseStudyLevel === 'technical'
-                  ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-neutral-700'
-                  : 'text-neutral-400 hover:text-neutral-200'
-              }`}
-            >
-              <Code2 className="w-4 h-4 text-indigo-400" />
-              <span>Level 2: Technical Breakdown</span>
-            </button>
-          </div>
-
-          {project.liveDemoUrl && (
+        {/* Live Interactive CRM / Live Demo Banner (if available) */}
+        {project.liveDemoUrl && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-neutral-900 to-neutral-950 border border-emerald-800/40 shadow-lg">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <div>
+                <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold block">
+                  Interactive Live Output
+                </span>
+                <p className="text-sm font-semibold text-neutral-100">
+                  {project.liveDemoLabel || 'Launch Live Production CRM'}
+                </p>
+              </div>
+            </div>
             <a
               href={project.liveDemoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900/90 border border-emerald-700/80 rounded-xl transition-all shadow-sm hover:shadow-emerald-500/20 cursor-pointer group"
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-semibold text-emerald-200 bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-600/60 rounded-xl transition-all shadow-md hover:shadow-emerald-500/20 cursor-pointer group whitespace-nowrap self-start sm:self-auto"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>{project.liveDemoLabel || 'Launch Live Production CRM'}</span>
-              <ExternalLink className="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              <span>Launch Live System</span>
+              <ExternalLink className="w-4 h-4 text-emerald-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </a>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* ======================================================== */}
-        {/* LEVEL 1: BUSINESS-FRIENDLY OVERVIEW                     */}
-        {/* ======================================================== */}
-        {caseStudyLevel === 'business' && (
-          <div className="space-y-12">
+        {/* Business-Friendly Case Study Content */}
+        <div className="space-y-12">
             
             {/* Top Showcase: Live Video Proof OR Key Delivered Outputs */}
             {project.videoUrl || (project.transcriptionDialogue && project.transcriptionDialogue.length > 0) ? (
@@ -484,25 +464,27 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               </div>
             </section>
 
-            {/* Subsection: The Solution & How It Works */}
+            {/* Subsection: How It Helps Your Business & How The Solution Works */}
             <section className="space-y-6 pt-6 border-t border-neutral-900">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold">
-                  The Automated Solution
+                  How It Helps Your Business
                 </span>
               </div>
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-neutral-100">
-                  How The System Runs in Practice
+                  How The Solution Works
                 </h2>
                 <p className="mt-1 text-sm text-neutral-400">
                   {caseStudy.overview}
                 </p>
               </div>
 
-              {/* Step-by-Step Practical Journey */}
+              {/* Step-by-Step Practical Journey (3-5 Simple Non-Technical Steps) */}
               <div className="space-y-3">
-                {caseStudy.howItWorks.map((step) => (
+                {(project.clientWorkflowSteps && project.clientWorkflowSteps.length > 0 
+                  ? project.clientWorkflowSteps 
+                  : caseStudy.howItWorks).map((step: any) => (
                   <div
                     key={step.step}
                     className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800/80 flex items-start gap-4 hover:border-neutral-700/80 transition-colors"
@@ -511,9 +493,16 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                       {step.step}
                     </div>
                     <div className="space-y-1">
-                      <h4 className="text-sm font-semibold text-neutral-100">
-                        {step.title}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-semibold text-neutral-100">
+                          {step.title}
+                        </h4>
+                        {step.tool && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-950 border border-neutral-800 text-neutral-400">
+                            {step.tool}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-neutral-300 leading-relaxed">
                         {step.description}
                       </p>
@@ -569,7 +558,6 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
                   <div key={idx} className="p-3.5 rounded-xl bg-neutral-900/40 border border-neutral-800 text-xs space-y-1">
                     <span className="font-semibold text-neutral-100 block">{tool.tool}</span>
                     <p className="text-neutral-400 text-[11px] leading-relaxed">{tool.purpose}</p>
-                    <span className="text-[10px] font-mono text-indigo-400 block pt-1">Auth: {tool.authMethod}</span>
                   </div>
                 ))}
               </div>
@@ -610,165 +598,6 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
             )}
 
           </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* LEVEL 2: TECHNICAL BREAKDOWN                            */}
-        {/* ======================================================== */}
-        {caseStudyLevel === 'technical' && (
-          <div className="space-y-12">
-            
-            {/* System Architecture Blueprint */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold">
-                  System Architecture Blueprint
-                </span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-100">
-                End-to-End Orchestration & Data Flow
-              </h2>
-              <div className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-800 text-xs text-neutral-300 leading-relaxed font-mono">
-                {caseStudy.architecture.diagramSummary}
-              </div>
-
-              {/* Data Flow Trace */}
-              <div className="p-5 rounded-xl bg-neutral-950 border border-neutral-850 space-y-2.5">
-                <h3 className="text-xs font-mono uppercase tracking-wider text-neutral-400 font-semibold">
-                  Data Flow Execution Trace
-                </h3>
-                <div className="space-y-2 text-xs font-mono">
-                  {caseStudy.architecture.dataFlow.map((step, idx) => (
-                    <div key={idx} className="flex items-start gap-2.5 text-neutral-300">
-                      <span className="text-indigo-400 font-bold shrink-0">→</span>
-                      <span>{step}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            {/* Decision Engine & Deterministic Safeguards */}
-            <section className="space-y-4 pt-6 border-t border-neutral-900">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-purple-400 font-semibold">
-                  Decision Engine & Deterministic Safeguards
-                </span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-100">
-                Deterministic Validation vs. Probabilistic AI
-              </h2>
-              <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
-                {caseStudy.logicAndDecisionEngine.deterministicVsAi}
-              </p>
-
-              {/* Scoring Breakdown if available */}
-              {caseStudy.logicAndDecisionEngine.scoringBreakdown && (
-                <div className="p-4 rounded-xl bg-neutral-900/60 border border-neutral-800 text-xs space-y-2">
-                  <h3 className="font-semibold text-neutral-200 font-mono uppercase tracking-wider text-[11px]">
-                    100-Point Scoring Rubric
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-300 font-mono text-[11px]">
-                    <div>Budget: {caseStudy.logicAndDecisionEngine.scoringBreakdown.budget}</div>
-                    <div>Company Size: {caseStudy.logicAndDecisionEngine.scoringBreakdown.companySize}</div>
-                    <div>Seniority: {caseStudy.logicAndDecisionEngine.scoringBreakdown.seniority}</div>
-                    <div>Thresholds: {caseStudy.logicAndDecisionEngine.scoringBreakdown.thresholds}</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Security & Token Validation Notes */}
-              <div className="p-4 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
-                <h3 className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Security & Integrity Policies</span>
-                </h3>
-                <ul className="space-y-1.5 text-xs text-neutral-400 font-mono">
-                  {caseStudy.logicAndDecisionEngine.securityNotes.map((note, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="text-emerald-500">✓</span>
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </section>
-
-            {/* Reliability, Deduplication & Error Handling */}
-            <section className="space-y-4 pt-6 border-t border-neutral-900">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold">
-                  Reliability & Fault-Tolerance
-                </span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-100">
-                Production Error Handling & Recovery
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800 space-y-1.5">
-                  <span className="font-semibold text-neutral-200 block font-mono text-[11px]">Deduplication</span>
-                  <p className="text-neutral-400 leading-relaxed">{caseStudy.reliabilityAndErrorHandling.deduplication}</p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800 space-y-1.5">
-                  <span className="font-semibold text-neutral-200 block font-mono text-[11px]">Tamper Protection</span>
-                  <p className="text-neutral-400 leading-relaxed">{caseStudy.reliabilityAndErrorHandling.tamperProtection}</p>
-                </div>
-
-                <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800 space-y-1.5">
-                  <span className="font-semibold text-neutral-200 block font-mono text-[11px]">Centralized Triage</span>
-                  <p className="text-neutral-400 leading-relaxed">{caseStudy.reliabilityAndErrorHandling.centralizedTriage}</p>
-                </div>
-              </div>
-            </section>
-
-            {/* Workflow Blueprints Preview */}
-            <section className="space-y-4 pt-6 border-t border-neutral-900">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-mono uppercase tracking-wider text-neutral-400 block mb-1">
-                    Node Blueprints
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-bold text-neutral-100">
-                    Engineered Workflows ({project.workflows.length})
-                  </h2>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {project.workflows.map((wf) => (
-                  <div key={wf.id} className="p-5 rounded-xl bg-neutral-900/40 border border-neutral-800 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-neutral-100">{wf.title}</h4>
-                      <span className="text-[11px] font-mono text-neutral-400 bg-neutral-950 px-2 py-0.5 rounded border border-neutral-800">
-                        Trigger: {wf.trigger}
-                      </span>
-                    </div>
-                    <p className="text-xs text-neutral-400 leading-relaxed">{wf.purpose}</p>
-
-                    <div className="pt-2">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 block mb-1.5">
-                        Pipeline Stages:
-                      </span>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {wf.stages.map((stage) => (
-                          <span
-                            key={stage.id}
-                            className="px-2 py-1 rounded bg-neutral-950 border border-neutral-800 text-[11px] font-mono text-neutral-300"
-                          >
-                            {stage.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-          </div>
-        )}
 
         {/* Bottom CTA Box */}
         <div className="p-8 sm:p-10 rounded-2xl bg-gradient-to-b from-neutral-900 to-neutral-950 border border-neutral-800 text-center space-y-4">

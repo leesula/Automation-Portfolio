@@ -1,6 +1,7 @@
 import React from 'react';
 import { siteConfig } from '../data/projects';
 import { ArrowUpRight, ArrowUp } from 'lucide-react';
+import { recordCallBookingToFirebase } from '../lib/firebase';
 
 interface FooterProps {
   onNavigateSection: (sectionId: string) => void;
@@ -41,10 +42,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateSection }) => {
               Projects
             </button>
             <button
-              onClick={() => onNavigateSection('architecture')}
+              onClick={() => onNavigateSection('how-it-helps')}
               className="hover:text-neutral-100 transition-colors cursor-pointer"
             >
-              Architecture & Flows
+              How It Helps
             </button>
             <button
               onClick={() => onNavigateSection('services')}
@@ -83,6 +84,13 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateSection }) => {
               href={siteConfig.calLink}
               target="_blank"
               rel="noreferrer"
+              onClick={() => {
+                recordCallBookingToFirebase({
+                  calLink: siteConfig.calLink,
+                  source: 'footer_cal_link',
+                  status: 'initiated'
+                }).catch(console.error);
+              }}
               className="hover:text-neutral-300 transition-colors inline-flex items-center gap-0.5"
             >
               <span>Cal.com</span>

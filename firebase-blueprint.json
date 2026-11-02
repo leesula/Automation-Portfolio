@@ -1,0 +1,118 @@
+{
+  "entities": {
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "A project scope inquiry submitted by a portfolio visitor or prospective client.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique inquiry document ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the prospective client",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the prospective client",
+          "minLength": 3,
+          "maxLength": 150
+        },
+        "company": {
+          "type": "string",
+          "description": "Company or organization name",
+          "maxLength": 100
+        },
+        "budget": {
+          "type": "string",
+          "description": "Estimated budget bracket selected by client",
+          "maxLength": 100
+        },
+        "requirements": {
+          "type": "string",
+          "description": "Detailed project automation requirements",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "contactMethod": {
+          "type": "string",
+          "description": "Preferred contact method (Email or Cal.com Call)",
+          "maxLength": 50
+        },
+        "source": {
+          "type": "string",
+          "description": "Source origin of the inquiry",
+          "maxLength": 100
+        },
+        "status": {
+          "type": "string",
+          "description": "Current lead status",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of submission"
+        }
+      },
+      "required": ["name", "email", "requirements", "createdAt"]
+    },
+    "CallBooking": {
+      "title": "CallBooking",
+      "description": "A discovery call booking action or intention initiated by a client.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique booking document ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the person scheduling the call",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the person scheduling the call",
+          "maxLength": 150
+        },
+        "calLink": {
+          "type": "string",
+          "description": "Target Cal.com scheduling link",
+          "maxLength": 300
+        },
+        "source": {
+          "type": "string",
+          "description": "Button or location where call was initiated",
+          "maxLength": 100
+        },
+        "status": {
+          "type": "string",
+          "description": "Booking status",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when the call was booked or initiated"
+        }
+      },
+      "required": ["calLink", "source", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/inquiries/{inquiryId}": {
+      "schema": {
+        "$ref": "#/entities/Inquiry"
+      },
+      "description": "Collection of all submitted project scope inquiries from the contact form."
+    },
+    "/call_bookings/{bookingId}": {
+      "schema": {
+        "$ref": "#/entities/CallBooking"
+      },
+      "description": "Collection of discovery call booking records initiated through Cal.com integration."
+    }
+  }
+}

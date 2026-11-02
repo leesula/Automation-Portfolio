@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidInquiry(data) {
+      return data.keys().hasAll(['name', 'email', 'requirements', 'createdAt'])
+        && data.keys().hasOnly(['name', 'email', 'company', 'budget', 'requirements', 'contactMethod', 'source', 'status', 'createdAt'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 150
+        && (!('company' in data) || (data.company is string && data.company.size() <= 100))
+        && (!('budget' in data) || (data.budget is string && data.budget.size() <= 100))
+        && data.requirements is string && data.requirements.size() > 0 && data.requirements.size() <= 4000
+        && (!('contactMethod' in data) || (data.contactMethod is string && data.contactMethod.size() <= 50))
+        && (!('source' in data) || (data.source is string && data.source.size() <= 100))
+        && (!('status' in data) || (data.status is string && data.status.size() <= 50))
+        && data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidCallBooking(data) {
+      return data.keys().hasAll(['calLink', 'source', 'createdAt'])
+        && data.keys().hasOnly(['name', 'email', 'calLink', 'source', 'status', 'createdAt'])
+        && (!('name' in data) || (data.name is string && data.name.size() <= 100))
+        && (!('email' in data) || (data.email is string && data.email.size() <= 150))
+        && data.calLink is string && data.calLink.size() <= 300
+        && data.source is string && data.source.size() <= 100
+        && (!('status' in data) || (data.status is string && data.status.size() <= 50))
+        && data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // Inquiries Collection: Public leads can submit inquiries, but PII cannot be read, updated or deleted publicly
+    match /inquiries/{inquiryId} {
+      allow create: if isValidId(inquiryId) && isValidInquiry(incoming());
+      allow read, update, delete: if false;
+    }
+
+    // Call Bookings Collection: Public leads can record discovery call bookings, cannot be read, updated or deleted publicly
+    match /call_bookings/{bookingId} {
+      allow create: if isValidId(bookingId) && isValidCallBooking(incoming());
+      allow read, update, delete: if false;
+    }
+  }
+}

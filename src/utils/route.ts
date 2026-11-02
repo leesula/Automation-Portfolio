@@ -23,8 +23,9 @@ export function parseCurrentRoute(): AppRoute {
   }
 
   // Check if hash matches a known section on home
-  if (['projects', 'architecture', 'services', 'methodology', 'about', 'contact', 'hero'].includes(hash)) {
-    return { type: 'home', section: hash };
+  if (['projects', 'architecture', 'how-it-helps', 'services', 'methodology', 'about', 'contact', 'hero'].includes(hash)) {
+    const section = hash === 'architecture' ? 'how-it-helps' : hash;
+    return { type: 'home', section };
   }
 
   return { type: 'home' };

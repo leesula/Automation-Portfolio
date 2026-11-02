@@ -32,8 +32,6 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
   onClose,
   onDiscussProject,
 }) => {
-  // Two levels: Business Overview (Level 1) and Technical Breakdown (Level 2)
-  const [caseStudyLevel, setCaseStudyLevel] = useState<'business' | 'technical'>('business');
   const [activeDemoTab, setActiveDemoTab] = useState<'video' | 'transcript' | 'outputs'>('video');
 
   // Prevent body scroll when modal is open
@@ -102,53 +100,29 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
             </p>
           </div>
 
-          {/* Level Switcher: Business Overview vs Technical Breakdown + Live Demo Action */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center p-1.5 bg-neutral-900 rounded-xl border border-neutral-800 w-fit">
-              <button
-                onClick={() => setCaseStudyLevel('business')}
-                className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-                  caseStudyLevel === 'business'
-                    ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-neutral-700'
-                    : 'text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                <Briefcase className="w-4 h-4 text-indigo-400" />
-                <span>Level 1: Business Overview</span>
-              </button>
-
-              <button
-                onClick={() => setCaseStudyLevel('technical')}
-                className={`flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all cursor-pointer ${
-                  caseStudyLevel === 'technical'
-                    ? 'bg-neutral-800 text-white shadow-sm ring-1 ring-neutral-700'
-                    : 'text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                <Code2 className="w-4 h-4 text-indigo-400" />
-                <span>Level 2: Technical Breakdown</span>
-              </button>
-            </div>
-
-            {project.liveDemoUrl && (
+          {/* Live Output Banner (if available) */}
+          {project.liveDemoUrl && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/40">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="text-xs font-semibold text-emerald-200">
+                  {project.liveDemoLabel || 'Launch Live Production CRM'}
+                </span>
+              </div>
               <a
                 href={project.liveDemoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 text-xs sm:text-sm font-semibold text-emerald-300 bg-emerald-950/80 hover:bg-emerald-900/90 border border-emerald-700/80 rounded-xl transition-all shadow-sm hover:shadow-emerald-500/20 cursor-pointer group"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-300 bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-700/80 rounded-lg transition-all cursor-pointer shadow-sm w-fit"
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>{project.liveDemoLabel || 'Launch Live Production CRM'}</span>
-                <ExternalLink className="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                <span>Launch Live System</span>
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
               </a>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* ======================================================== */}
-          {/* LEVEL 1: BUSINESS-FRIENDLY OVERVIEW                     */}
-          {/* ======================================================== */}
-          {caseStudyLevel === 'business' && (
-            <div className="space-y-10">
+          {/* Business-Friendly Case Study Body */}
+          <div className="space-y-10">
               
               {/* Top Showcase: Live Video Proof OR Key Delivered Outputs */}
               {project.videoUrl || (project.transcriptionDialogue && project.transcriptionDialogue.length > 0) ? (
@@ -495,171 +469,7 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
                   <span>{caseStudy.businessValue.unverifiedNotice}</span>
                 </div>
               </section>
-
             </div>
-          )}
-
-          {/* ======================================================== */}
-          {/* LEVEL 2: TECHNICAL BREAKDOWN & ARCHITECTURE              */}
-          {/* ======================================================== */}
-          {caseStudyLevel === 'technical' && (
-            <div className="space-y-10">
-              
-              {/* Architecture & Data Flow */}
-              <section className="space-y-4">
-                <h2 className="text-lg font-bold text-neutral-100 flex items-center gap-2">
-                  <span className="text-indigo-400 font-mono text-sm">T-01.</span>
-                  <span>System Architecture & Pipeline Data Flow</span>
-                </h2>
-                <p className="text-sm text-neutral-300 leading-relaxed">
-                  {caseStudy.architecture.diagramSummary}
-                </p>
-
-                <div className="p-4 sm:p-5 rounded-xl bg-neutral-900/60 border border-neutral-800 space-y-2 font-mono text-xs text-neutral-300">
-                  <span className="text-[11px] uppercase tracking-wider text-indigo-400 block font-semibold mb-2">
-                    Sequential Data Pipeline
-                  </span>
-                  {caseStudy.architecture.dataFlow.map((flowStep, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-neutral-300">
-                      <span className="text-neutral-500 shrink-0">[{idx + 1}]</span>
-                      <span>{flowStep}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Logic & Decision Engineering */}
-              <section className="space-y-4 pt-6 border-t border-neutral-900">
-                <h2 className="text-lg font-bold text-neutral-100 flex items-center gap-2">
-                  <span className="text-indigo-400 font-mono text-sm">T-02.</span>
-                  <span>Deterministic Logic vs. AI Decision Engineering</span>
-                </h2>
-                <p className="text-sm text-neutral-300 leading-relaxed">
-                  {caseStudy.logicAndDecisionEngine.deterministicVsAi}
-                </p>
-
-                {caseStudy.logicAndDecisionEngine.scoringBreakdown && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs font-mono">
-                    <div className="p-3.5 rounded-lg bg-neutral-900/60 border border-neutral-800 space-y-1">
-                      <span className="text-indigo-400 font-semibold block">Budget Weights (0–40 pts)</span>
-                      <p className="text-neutral-400">{caseStudy.logicAndDecisionEngine.scoringBreakdown.budget}</p>
-                    </div>
-                    <div className="p-3.5 rounded-lg bg-neutral-900/60 border border-neutral-800 space-y-1">
-                      <span className="text-indigo-400 font-semibold block">Company Size Weights (0–35 pts)</span>
-                      <p className="text-neutral-400">{caseStudy.logicAndDecisionEngine.scoringBreakdown.companySize}</p>
-                    </div>
-                    <div className="p-3.5 rounded-lg bg-neutral-900/60 border border-neutral-800 space-y-1">
-                      <span className="text-indigo-400 font-semibold block">Seniority Weights (0–25 pts)</span>
-                      <p className="text-neutral-400">{caseStudy.logicAndDecisionEngine.scoringBreakdown.seniority}</p>
-                    </div>
-                    <div className="p-3.5 rounded-lg bg-neutral-900/60 border border-neutral-800 space-y-1">
-                      <span className="text-indigo-400 font-semibold block">Tier Action Thresholds</span>
-                      <p className="text-neutral-400">{caseStudy.logicAndDecisionEngine.scoringBreakdown.thresholds}</p>
-                    </div>
-                  </div>
-                )}
-              </section>
-
-              {/* Full Integrations & Auth Matrix */}
-              <section className="space-y-4 pt-6 border-t border-neutral-900">
-                <h2 className="text-lg font-bold text-neutral-100 flex items-center gap-2">
-                  <span className="text-indigo-400 font-mono text-sm">T-03.</span>
-                  <span>Integrations & Authentication Protocol Matrix</span>
-                </h2>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border border-neutral-800 rounded-lg overflow-hidden">
-                    <thead className="bg-neutral-900 text-neutral-300 font-mono">
-                      <tr>
-                        <th className="p-3 border-b border-neutral-800">Tool / Service</th>
-                        <th className="p-3 border-b border-neutral-800">Role in Pipeline</th>
-                        <th className="p-3 border-b border-neutral-800">Authentication / Protocol</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-850 text-neutral-300 font-mono">
-                      {caseStudy.integrations.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-neutral-900/40">
-                          <td className="p-3 font-semibold text-neutral-100">{item.tool}</td>
-                          <td className="p-3 font-sans text-neutral-300">{item.purpose}</td>
-                          <td className="p-3 text-neutral-400">{item.authMethod}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-              {/* Reliability, Deduplication & Error Handling */}
-              <section className="space-y-4 pt-6 border-t border-neutral-900">
-                <h2 className="text-lg font-bold text-neutral-100 flex items-center gap-2">
-                  <span className="text-indigo-400 font-mono text-sm">T-04.</span>
-                  <span>Reliability, Deduplication & Fault Trapping</span>
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800 space-y-1.5">
-                    <span className="text-xs font-mono font-semibold text-indigo-400 block">Deduplication</span>
-                    <p className="text-xs text-neutral-300 leading-relaxed">
-                      {caseStudy.reliabilityAndErrorHandling.deduplication}
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800 space-y-1.5">
-                    <span className="text-xs font-mono font-semibold text-emerald-400 block">Tamper Protection</span>
-                    <p className="text-xs text-neutral-300 leading-relaxed">
-                      {caseStudy.reliabilityAndErrorHandling.tamperProtection}
-                    </p>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800 space-y-1.5">
-                    <span className="text-xs font-mono font-semibold text-amber-400 block">Centralized Triage</span>
-                    <p className="text-xs text-neutral-300 leading-relaxed">
-                      {caseStudy.reliabilityAndErrorHandling.centralizedTriage}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              {/* Limitations & Roadmap */}
-              <section className="space-y-4 pt-6 border-t border-neutral-900">
-                <h2 className="text-lg font-bold text-neutral-100 flex items-center gap-2">
-                  <span className="text-indigo-400 font-mono text-sm">T-05.</span>
-                  <span>Current Limitations & Planned Roadmap</span>
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800 space-y-2">
-                    <span className="text-xs font-mono uppercase text-neutral-400 font-semibold block">
-                      Identified Current Limitations
-                    </span>
-                    <ul className="space-y-2 text-xs text-neutral-300">
-                      {caseStudy.limitationsAndFutureImprovements.currentLimitations.map((lim, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-neutral-500 font-mono">•</span>
-                          <span>{lim}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800 space-y-2">
-                    <span className="text-xs font-mono uppercase text-indigo-400 font-semibold block">
-                      Planned Future Enhancements
-                    </span>
-                    <ul className="space-y-2 text-xs text-neutral-300">
-                      {caseStudy.limitationsAndFutureImprovements.plannedEnhancements.map((enh, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-indigo-400 font-mono">→</span>
-                          <span>{enh}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </section>
-
-            </div>
-          )}
 
           {/* Call to Action Footer */}
           <section className="pt-8 pb-4 border-t border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-indigo-950/20 p-6 rounded-2xl border border-indigo-900/40">

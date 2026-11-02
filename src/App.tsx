@@ -3,8 +3,7 @@ import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { Capabilities } from './components/Capabilities';
 import { FeaturedProjects } from './components/FeaturedProjects';
-import { WorkflowInteractiveViewer } from './components/WorkflowInteractiveViewer';
-import { AgentSafetySimulator } from './components/AgentSafetySimulator';
+import { HowItHelpsYourBusiness } from './components/HowItHelpsYourBusiness';
 import { Services } from './components/Services';
 import { HowIWork } from './components/HowIWork';
 import { AboutMe } from './components/AboutMe';
@@ -72,7 +71,7 @@ export default function App() {
 
   const handleInspectWorkflows = (project: Project) => {
     setActiveProjectIdForInspection(project.id);
-    handleNavigateSection('architecture');
+    handleNavigateSection('how-it-helps');
   };
 
   const handleDiscussService = (serviceTitle: string) => {
@@ -146,40 +145,13 @@ export default function App() {
             {/* Specialized in Production-Ready Automation Systems (Capabilities) */}
             <Capabilities />
 
-            {/* Architecture & Interactive Workflow Inspection Section */}
-            <section id="architecture" className="py-24 bg-neutral-950 border-b border-neutral-850 text-neutral-100">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-                
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-neutral-800">
-                  <div className="max-w-2xl">
-                    <span className="text-xs font-mono uppercase tracking-wider text-indigo-400 block mb-2">
-                      Technical Verification
-                    </span>
-                    <h2 className="text-3xl sm:text-4xl font-bold text-neutral-50 tracking-tight">
-                      Behind the Scenes: Node Logic & Blueprints
-                    </h2>
-                    <p className="mt-3 text-sm sm:text-base text-neutral-400 leading-relaxed">
-                      For technical teams and founders who want to verify how these automations are engineered under the hood. Inspect the exact n8n node blueprints, database contracts, and error-handling routines.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs font-mono text-neutral-400 bg-neutral-950 px-3 py-1.5 rounded-lg border border-neutral-800 self-start md:self-auto">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    <span>Verified n8n Workflows</span>
-                  </div>
-                </div>
-
-                {/* Interactive Workflow Node Explorer */}
-                <WorkflowInteractiveViewer
-                  projects={projectsData}
-                  initialProjectId={activeProjectIdForInspection}
-                />
-
-                {/* Interactive Multi-Project Logic & Safety Simulator */}
-                <AgentSafetySimulator />
-
-              </div>
-            </section>
+            {/* Client-Focused Section: How It Helps Your Business */}
+            <HowItHelpsYourBusiness
+              projects={projectsData}
+              initialProjectId={activeProjectIdForInspection}
+              onSelectProject={(slug) => navigateTo({ type: 'project-detail', slug })}
+              onDiscussProject={(title) => handleOpenContact(title)}
+            />
 
             {/* Services & Deliverables */}
             <Services onDiscussService={handleDiscussService} />

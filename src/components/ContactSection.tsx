@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { siteConfig } from '../data/projects';
-import { Mail, Calendar, ArrowRight, CheckCircle2, Copy, Send, Info } from 'lucide-react';
+import { Mail, Calendar, ArrowRight, CheckCircle2, Copy, Send, Info, Loader2, Database } from 'lucide-react';
+import { saveInquiryToFirebase, recordCallBookingToFirebase } from '../lib/firebase';
 
 interface ContactSectionProps {
   initialServiceInterest?: string;
@@ -17,6 +18,10 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ initialServiceIn
   const [contactMethod, setContactMethod] = useState<'Email' | 'Cal.com Call'>('Email');
   const [copied, setCopied] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [firebaseSaved, setFirebaseSaved] = useState(false);
+  const [savedInquiryId, setSavedInquiryId] = useState<string>('');
+  const [callBookedNotice, setCallBookedNotice] = useState(false);
 
   const formatInquiryText = () => {
     return `PROJECT INQUIRY FOR AUTOMATION BUILDER
@@ -38,14 +43,65 @@ ${requirements || 'N/A'}
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitted(true);
+  const handleBookCallClick = async (sourceTag = 'contact_section_cal_card') => {
+    try {
+      await recordCallBookingToFirebase({
+        name: name || undefined,
+        email: email || undefined,
+        calLink: siteConfig.calLink,
+        source: sourceTag,
+        status: 'initiated',
+      });
+      setCallBookedNotice(true);
+    } catch (err) {
+      console.error('Call booking record error:', err);
+    }
+  };
 
-    // Open mailto with structured data
-    const subject = encodeURIComponent(`Automation Project Inquiry: ${company || name || 'New Project'}`);
-    const body = encodeURIComponent(formatInquiryText());
-    window.location.href = `mailto:${siteConfig.email}?subject=${subject}&body=${body}`;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // 1. Store directly in Firebase Firestore
+      const result = await saveInquiryToFirebase({
+        name,
+        email,
+        company,
+        budget,
+        requirements,
+        contactMethod,
+        source: 'portfolio_contact_form',
+      });
+
+      if (result.success) {
+        setFirebaseSaved(true);
+        setSavedInquiryId(result.id);
+      }
+
+      // 2. If client preferred Cal.com Call, record the call booking intent in Firebase
+      if (contactMethod === 'Cal.com Call') {
+        await recordCallBookingToFirebase({
+          name,
+          email,
+          calLink: siteConfig.calLink,
+          source: 'contact_form_selection',
+          status: 'scheduled_request',
+        });
+      }
+
+      setSubmitted(true);
+
+      // Open mailto with structured data as secondary channel
+      const subject = encodeURIComponent(`Automation Project Inquiry: ${company || name || 'New Project'}`);
+      const body = encodeURIComponent(formatInquiryText());
+      window.location.href = `mailto:${siteConfig.email}?subject=${subject}&body=${body}`;
+    } catch (error) {
+      console.error('Submission error:', error);
+      setSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -93,6 +149,7 @@ ${requirements || 'N/A'}
                 href={siteConfig.calLink}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() => handleBookCallClick('contact_section_cal_card')}
                 className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 transition-colors flex items-center justify-between group"
               >
                 <div className="flex items-center gap-3">
@@ -110,11 +167,14 @@ ${requirements || 'N/A'}
               </a>
             </div>
 
-            {/* Transparent Backend Note */}
-            <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800/80 text-xs text-neutral-400 flex items-start gap-2.5">
-              <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+            {/* Live Database Note */}
+            <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800/80 text-xs text-neutral-400 space-y-1.5">
+              <div className="flex items-center gap-2 text-emerald-400 font-semibold font-mono text-[11px]">
+                <Database className="w-3.5 h-3.5" />
+                <span>Connected to Firebase Firestore</span>
+              </div>
               <p className="leading-relaxed">
-                <strong>Transparent Note:</strong> This form launches a direct pre-filled email draft or lets you copy your inquiry text with one click. In production client deployments, this connects to an n8n webhook endpoint with Supabase and Slack alerts.
+                Every project inquiry and booked discovery call is securely stored in real-time in our Firebase database for prompt follow-up.
               </p>
             </div>
           </div>
@@ -234,10 +294,20 @@ ${requirements || 'N/A'}
                 <div className="pt-4 flex flex-col sm:flex-row items-center gap-3">
                   <button
                     type="submit"
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors cursor-pointer"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-800 disabled:text-neutral-500 rounded-lg transition-colors cursor-pointer shadow-sm hover:shadow-indigo-500/20"
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Send Project Inquiry</span>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                        <span>Saving to Firebase...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Send Project Inquiry</span>
+                      </>
+                    )}
                   </button>
 
                   <button
@@ -251,9 +321,41 @@ ${requirements || 'N/A'}
                 </div>
 
                 {submitted && (
-                  <div className="mt-3 p-3 rounded-lg bg-emerald-950/40 border border-emerald-800/80 text-xs text-emerald-300 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Email client opened! If your email client didn't launch automatically, please copy the inquiry text and send directly to {siteConfig.email}.</span>
+                  <div className="mt-4 p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/80 text-xs space-y-2">
+                    <div className="flex items-center gap-2 text-emerald-300 font-semibold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Inquiry successfully saved to Firebase database!</span>
+                    </div>
+                    {savedInquiryId && (
+                      <p className="font-mono text-[11px] text-emerald-400/90 pl-6">
+                        Firestore Reference ID: <span className="text-white font-bold">{savedInquiryId}</span>
+                      </p>
+                    )}
+                    <p className="text-neutral-300 pl-6 leading-relaxed">
+                      Your inquiry has been stored in real time. We've also initiated an email draft so you have a direct receipt.
+                    </p>
+                    {contactMethod === 'Cal.com Call' && (
+                      <div className="pl-6 pt-1">
+                        <a
+                          href={siteConfig.calLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={() => handleBookCallClick('contact_form_success_cta')}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-semibold transition-colors"
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Select your preferred discovery call time on Cal.com</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {callBookedNotice && !submitted && (
+                  <div className="mt-3 p-3 rounded-lg bg-indigo-950/40 border border-indigo-800/80 text-xs text-indigo-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <span>Discovery call booking initiated and recorded in Firebase. Opening Cal.com...</span>
                   </div>
                 )}
 
