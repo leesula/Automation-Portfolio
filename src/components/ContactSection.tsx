@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { siteConfig } from '../data/projects';
 import { Mail, Calendar, ArrowRight, CheckCircle2, Copy, Send, Info, Loader2, Database } from 'lucide-react';
 import { saveInquiryToSupabase, recordCallBookingToSupabase } from '../lib/supabase';
+import { CalBookingModal } from './CalBookingModal';
 
 interface ContactSectionProps {
   initialServiceInterest?: string;
@@ -22,6 +23,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ initialServiceIn
   const [supabaseSaved, setSupabaseSaved] = useState(false);
   const [savedInquiryId, setSavedInquiryId] = useState<string>('');
   const [callBookedNotice, setCallBookedNotice] = useState(false);
+  const [calModalOpen, setCalModalOpen] = useState(false);
 
   const formatInquiryText = () => {
     return `PROJECT INQUIRY FOR AUTOMATION BUILDER
@@ -145,12 +147,13 @@ ${requirements || 'N/A'}
                 <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white transition-colors" />
               </a>
 
-              <a
-                href={siteConfig.calLink}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => handleBookCallClick('contact_section_cal_card')}
-                className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 transition-colors flex items-center justify-between group"
+              <button
+                type="button"
+                onClick={() => {
+                  handleBookCallClick('contact_section_cal_card');
+                  setCalModalOpen(true);
+                }}
+                className="w-full p-4 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 transition-colors flex items-center justify-between group cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-neutral-950 border border-neutral-800 text-indigo-400">
@@ -159,12 +162,15 @@ ${requirements || 'N/A'}
                   <div>
                     <span className="text-xs font-medium text-neutral-400 block">Book 20-min Discovery Call</span>
                     <span className="text-sm font-semibold text-neutral-200 group-hover:text-indigo-300 transition-colors">
-                      Open Cal.com Calendar
+                      Open Interactive Scheduler
                     </span>
                   </div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white transition-colors" />
-              </a>
+                <div className="flex items-center gap-1.5 text-xs text-indigo-400 font-medium">
+                  <span className="hidden sm:inline">Pick a Time</span>
+                  <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white transition-colors" />
+                </div>
+              </button>
             </div>
 
             {/* Live Database Note */}
@@ -336,17 +342,15 @@ ${requirements || 'N/A'}
                     </p>
                     {contactMethod === 'Cal.com Call' && (
                       <div className="pl-6 pt-1">
-                        <a
-                          href={siteConfig.calLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={() => handleBookCallClick('contact_form_success_cta')}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-xs font-semibold transition-colors"
+                        <button
+                          type="button"
+                          onClick={() => setCalModalOpen(true)}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold transition-colors cursor-pointer shadow-sm"
                         >
                           <Calendar className="w-3.5 h-3.5" />
-                          <span>Select your preferred discovery call time on Cal.com</span>
+                          <span>Select your preferred discovery call time now</span>
                           <ArrowRight className="w-3.5 h-3.5" />
-                        </a>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -366,6 +370,15 @@ ${requirements || 'N/A'}
         </div>
 
       </div>
+
+      {/* Interactive Cal.com Booking Modal with Real-Time Supabase Sync */}
+      <CalBookingModal
+        isOpen={calModalOpen}
+        onClose={() => setCalModalOpen(false)}
+        prefillName={name}
+        prefillEmail={email}
+        source="contact_section_modal"
+      />
     </section>
   );
 };

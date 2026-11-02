@@ -33,11 +33,15 @@ export interface InquiryData {
 }
 
 export interface CallBookingData {
+  uid?: string;
   name?: string;
   email?: string;
   calLink: string;
   source: string;
   status?: string;
+  startTime?: string;
+  endTime?: string;
+  title?: string;
 }
 
 /**
@@ -126,7 +130,7 @@ export async function recordCallBookingToSupabase(booking: CallBookingData): Pro
 }> {
   const localId = `book_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-  const record = {
+  const fullRecord: Record<string, any> = {
     name: (booking.name || 'Anonymous Visitor').trim(),
     email: (booking.email || 'not_provided@visitor.io').trim().toLowerCase(),
     cal_link: booking.calLink,
@@ -135,10 +139,24 @@ export async function recordCallBookingToSupabase(booking: CallBookingData): Pro
     created_at: new Date().toISOString(),
   };
 
+  if (booking.uid) fullRecord.uid = booking.uid;
+  if (booking.startTime) fullRecord.start_time = booking.startTime;
+  if (booking.endTime) fullRecord.end_time = booking.endTime;
+  if (booking.title) fullRecord.title = booking.title;
+
+  const baseRecord = {
+    name: fullRecord.name,
+    email: fullRecord.email,
+    cal_link: fullRecord.cal_link,
+    source: fullRecord.source,
+    status: fullRecord.status,
+    created_at: fullRecord.created_at,
+  };
+
   // Local backup
   try {
     const existing = JSON.parse(localStorage.getItem('supabase_call_bookings_backup') || '[]');
-    existing.push({ id: localId, ...record });
+    existing.push({ id: localId, ...fullRecord });
     localStorage.setItem('supabase_call_bookings_backup', JSON.stringify(existing));
   } catch {
     // ignore
@@ -146,26 +164,44 @@ export async function recordCallBookingToSupabase(booking: CallBookingData): Pro
 
   if (supabase) {
     try {
+      // First attempt with full appointment schema
       const { data, error } = await supabase
         .from('call_bookings')
-        .insert([record])
+        .insert([fullRecord])
         .select('id')
         .single();
 
-      if (error) {
-        console.warn('Supabase call_bookings warning:', error.message);
+      if (!error) {
         return { 
           success: true, 
-          id: localId, 
-          storageType: 'local_fallback',
-          error: error.message 
+          id: data?.id || localId, 
+          storageType: 'supabase' 
         };
       }
 
+      // If fullRecord failed due to new columns not existing yet in user's DB, retry with baseRecord
+      if (error && (error.message.includes('column') || error.code === '42703')) {
+        const retryResult = await supabase
+          .from('call_bookings')
+          .insert([baseRecord])
+          .select('id')
+          .single();
+
+        if (!retryResult.error) {
+          return {
+            success: true,
+            id: retryResult.data?.id || localId,
+            storageType: 'supabase'
+          };
+        }
+      }
+
+      console.warn('Supabase call_bookings notice:', error.message);
       return { 
         success: true, 
-        id: data?.id || localId, 
-        storageType: 'supabase' 
+        id: localId, 
+        storageType: 'local_fallback',
+        error: error.message 
       };
     } catch (err: any) {
       console.error('Supabase call_bookings exception:', err);

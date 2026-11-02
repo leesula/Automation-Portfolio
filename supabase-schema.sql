@@ -21,13 +21,23 @@ CREATE TABLE IF NOT EXISTS public.inquiries (
 -- 2. Create Call Bookings Table (For Cal.com Scheduled Discovery Calls)
 CREATE TABLE IF NOT EXISTS public.call_bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  uid TEXT,
   name TEXT,
   email TEXT,
   cal_link TEXT NOT NULL,
   source TEXT DEFAULT 'portfolio_discovery_call_button',
   status TEXT DEFAULT 'initiated',
+  start_time TIMESTAMPTZ,
+  end_time TIMESTAMPTZ,
+  title TEXT DEFAULT 'Discovery Call (20 min)',
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Ensure upgrade columns exist if the table was created previously
+ALTER TABLE public.call_bookings ADD COLUMN IF NOT EXISTS uid TEXT;
+ALTER TABLE public.call_bookings ADD COLUMN IF NOT EXISTS start_time TIMESTAMPTZ;
+ALTER TABLE public.call_bookings ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ;
+ALTER TABLE public.call_bookings ADD COLUMN IF NOT EXISTS title TEXT;
 
 -- 3. Enable Row Level Security (RLS) on both tables for security
 ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
