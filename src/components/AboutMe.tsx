@@ -25,8 +25,8 @@ export const AboutMe: React.FC<AboutMeProps> = ({ onOpenBookingModal }) => {
               <h2 className="text-3xl sm:text-4xl font-bold text-neutral-50 tracking-tight">
                 About Me
               </h2>
-              <p className="text-sm font-medium text-indigo-400 font-mono mt-1">
-                {siteConfig.builderName} — {siteConfig.roleTitle}
+              <p className="text-xs sm:text-sm font-semibold text-indigo-400 font-mono mt-2 leading-relaxed">
+                AI Automation Builder | Helping Real Estate Agencies Reduce Manual Work, Improve Lead Follow-ups & Streamline Operations.
               </p>
             </div>
 
@@ -87,15 +87,15 @@ export const AboutMe: React.FC<AboutMeProps> = ({ onOpenBookingModal }) => {
           {/* Right Column: Clean Personal Brand Card */}
           <div className="lg:col-span-5">
             <div className="rounded-2xl border border-neutral-850 bg-neutral-950 hover:border-neutral-750 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden group">
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <span className="text-xs font-mono uppercase tracking-wider text-neutral-500 block">
                   Profile Summary
                 </span>
                 <h3 className="text-xl font-bold text-neutral-100">
                   {siteConfig.builderName}
                 </h3>
-                <p className="text-xs font-mono text-indigo-400">
-                  {siteConfig.roleTitle} · {siteConfig.location}
+                <p className="text-xs font-mono text-indigo-400 font-medium leading-relaxed">
+                  AI Automation Builder | Helping Real Estate Agencies Reduce Manual Work, Improve Lead Follow-ups & Streamline Operations.
                 </p>
               </div>
 
