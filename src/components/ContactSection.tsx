@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { siteConfig } from '../data/projects';
-import { Mail, Calendar, ArrowRight, CheckCircle2, Copy, Send, Info, Loader2, Database } from 'lucide-react';
+import { Mail, Calendar, ArrowRight, CheckCircle2, Copy, Send, Info, Loader2, Database, MessageSquare, Linkedin, ArrowUpRight } from 'lucide-react';
 import { saveInquiryToSupabase, recordCallBookingToSupabase } from '../lib/supabase';
 import { CalBookingModal } from './CalBookingModal';
 
@@ -107,7 +107,7 @@ ${requirements || 'N/A'}
   };
 
   return (
-    <section id="contact" className="py-24 bg-neutral-950 text-neutral-100">
+    <section id="contact" className="py-24 bg-neutral-950 text-neutral-100 transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
@@ -115,26 +115,29 @@ ${requirements || 'N/A'}
           {/* Left Column: Heading & Context */}
           <div className="lg:col-span-5 space-y-6">
             <div>
-              <span className="text-xs font-mono uppercase tracking-wider text-indigo-400 block mb-2">
-                Get in Touch
-              </span>
+              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold mb-2">
+                <span>Section 09</span>
+                <span className="text-neutral-700">·</span>
+                <span>Get in Touch</span>
+              </div>
               <h2 className="text-3xl sm:text-4xl font-bold text-neutral-50 tracking-tight">
-                Have a Process Worth Automating?
+                Have a Business Process You Want to Automate?
               </h2>
             </div>
 
-            <p className="text-sm sm:text-base text-neutral-300 leading-relaxed">
-              Tell me what your team does manually today. Let's explore how an AI-powered workflow or business automation could eliminate friction, improve turnaround times, and free up your team.
+            <p className="text-sm sm:text-base text-neutral-300 leading-relaxed font-normal">
+              Let's explore how AI and automation can make your everyday business operations easier.
             </p>
 
-            {/* Direct Contact Cards */}
-            <div className="space-y-3 pt-2">
+            {/* Direct Channel Buttons: Email, LinkedIn, Cal.com */}
+            <div className="space-y-3 pt-1">
+              {/* Direct Email */}
               <a
                 href={`mailto:${siteConfig.email}`}
-                className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 transition-colors flex items-center justify-between group"
+                className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-indigo-500/60 hover:bg-neutral-850 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 flex items-center justify-between group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-neutral-950 border border-neutral-800 text-indigo-400">
+                  <div className="p-2.5 rounded-lg bg-neutral-950 border border-neutral-800 text-indigo-400">
                     <Mail className="w-4 h-4" />
                   </div>
                   <div>
@@ -147,16 +150,40 @@ ${requirements || 'N/A'}
                 <ArrowRight className="w-4 h-4 text-neutral-500 group-hover:text-white transition-colors" />
               </a>
 
+              {/* LinkedIn Profile */}
+              {siteConfig.linkedin && (
+                <a
+                  href={siteConfig.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 hover:bg-neutral-850 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-lg bg-neutral-950 border border-neutral-800 text-indigo-400">
+                      <Linkedin className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-neutral-400 block">Professional Network</span>
+                      <span className="text-sm font-semibold text-neutral-200 group-hover:text-indigo-300 transition-colors">
+                        Connect on LinkedIn
+                      </span>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-neutral-500 group-hover:text-white transition-colors" />
+                </a>
+              )}
+
+              {/* In-App Cal.com Discovery Call Modal */}
               <button
                 type="button"
                 onClick={() => {
                   handleBookCallClick('contact_section_cal_card');
                   setCalModalOpen(true);
                 }}
-                className="w-full p-4 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 transition-colors flex items-center justify-between group cursor-pointer text-left"
+                className="w-full p-4 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-indigo-500/80 hover:bg-neutral-850 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300 flex items-center justify-between group cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-neutral-950 border border-neutral-800 text-indigo-400">
+                  <div className="p-2.5 rounded-lg bg-neutral-950 border border-neutral-800 text-indigo-400">
                     <Calendar className="w-4 h-4" />
                   </div>
                   <div>
@@ -174,13 +201,13 @@ ${requirements || 'N/A'}
             </div>
 
             {/* Live Database Note */}
-            <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800/80 text-xs text-neutral-400 space-y-1.5">
+            <div className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-850 text-xs text-neutral-400 space-y-1.5">
               <div className="flex items-center gap-2 text-emerald-400 font-semibold font-mono text-[11px]">
                 <Database className="w-3.5 h-3.5" />
                 <span>Connected to Supabase Database</span>
               </div>
               <p className="leading-relaxed">
-                Every project inquiry and booked discovery call is securely stored in real-time in your integrated Supabase database for automated CRM synchronization and follow-up.
+                Inquiries and booked calls are securely stored in real-time in Supabase for structured CRM tracking and prompt follow-up.
               </p>
             </div>
           </div>

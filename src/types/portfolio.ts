@@ -89,6 +89,26 @@ export interface ProjectKeyOutput {
   actionLabel?: string;
 }
 
+export interface BusinessImpactStatement {
+  title: string;
+  description: string;
+}
+
+export interface BeforeVsAfter {
+  beforeTitle?: string;
+  before: string[];
+  afterTitle?: string;
+  after: string[];
+}
+
+export interface BusinessImpactData {
+  summary: string;
+  cardBenefit: string;
+  impactStatements: BusinessImpactStatement[];
+  beforeVsAfter: BeforeVsAfter;
+  potentialMetrics?: string[];
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -96,6 +116,7 @@ export interface Project {
   slug: string;
   category: string;
   tagline: string;
+  cardBenefit?: string;
   problem: string;
   solution: string;
   implementationStatus: ProjectStatus;
@@ -108,6 +129,7 @@ export interface Project {
   transcriptionDialogue?: TranscriptionTurn[];
   clientWorkflowSteps?: ClientWorkflowStep[];
   keyOutputs?: ProjectKeyOutput[];
+  businessImpact?: BusinessImpactData;
   liveDemoUrl?: string;
   liveDemoLabel?: string;
 }

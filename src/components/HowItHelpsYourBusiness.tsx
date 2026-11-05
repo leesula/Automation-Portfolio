@@ -16,7 +16,9 @@ import {
   PhoneCall,
   Calendar,
   Database,
-  Users
+  Users,
+  XCircle,
+  TrendingUp
 } from 'lucide-react';
 
 interface HowItHelpsYourBusinessProps {
@@ -149,6 +151,41 @@ export const HowItHelpsYourBusiness: React.FC<HowItHelpsYourBusinessProps> = ({
                       <span>{pain}</span>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Before vs. With Automation Comparison Box */}
+              {activeProject.businessImpact?.beforeVsAfter && (
+                <div className="pt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl bg-red-950/20 border border-red-900/35 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-bold font-mono uppercase tracking-wider text-red-400">
+                      <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                      <span>{activeProject.businessImpact.beforeVsAfter.beforeTitle || 'Before Automation (Manual Process)'}</span>
+                    </div>
+                    <ul className="space-y-2 text-xs text-neutral-300">
+                      {activeProject.businessImpact.beforeVsAfter.before.map((point, pIdx) => (
+                        <li key={pIdx} className="flex items-start gap-2 leading-relaxed">
+                          <span className="text-red-400 font-mono text-[11px] shrink-0 mt-0.5">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-emerald-950/25 border border-emerald-900/40 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-bold font-mono uppercase tracking-wider text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>{activeProject.businessImpact.beforeVsAfter.afterTitle || 'With AI Workflow Automation'}</span>
+                    </div>
+                    <ul className="space-y-2 text-xs text-neutral-200">
+                      {activeProject.businessImpact.beforeVsAfter.after.map((point, pIdx) => (
+                        <li key={pIdx} className="flex items-start gap-2 leading-relaxed">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
             </div>

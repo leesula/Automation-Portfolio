@@ -91,10 +91,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               onNavigateHome();
               setMobileMenuOpen(false);
             }}
-            className="text-base font-semibold text-neutral-100 tracking-tight hover:text-indigo-400 transition-colors whitespace-nowrap shrink-0 text-left cursor-pointer flex items-center gap-2"
+            className="group text-base font-semibold text-neutral-100 tracking-tight hover:text-indigo-400 transition-all duration-200 whitespace-nowrap shrink-0 text-left cursor-pointer flex items-center gap-2.5"
           >
-            <span>{siteConfig.builderName}</span>
-            <span className="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/80 hidden sm:inline">
+            <span className="transition-colors duration-200 group-hover:text-white flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse inline-block" />
+              {siteConfig.builderName}
+            </span>
+            <span className="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/80 hidden sm:inline transition-all duration-200 group-hover:border-indigo-600/80">
               AI Automations
             </span>
           </button>
@@ -225,22 +228,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <button
-              onClick={() => handleNavSection('how-it-helps')}
-              className="hover:text-neutral-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              How It Helps
-            </button>
-            <button
               onClick={() => handleNavSection('services')}
               className="hover:text-neutral-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               Services
             </button>
             <button
-              onClick={() => handleNavSection('methodology')}
+              onClick={() => handleNavSection('why-automation')}
+              className="hover:text-neutral-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Why Automation
+            </button>
+            <button
+              onClick={() => handleNavSection('process')}
               className="hover:text-neutral-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               How I Work
+            </button>
+            <button
+              onClick={() => handleNavSection('tech-stack')}
+              className="hover:text-neutral-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Tech Stack
             </button>
             <button
               onClick={() => handleNavSection('about')}
@@ -248,15 +257,21 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               About
             </button>
+            <button
+              onClick={() => handleNavSection('faq')}
+              className="hover:text-neutral-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              FAQ
+            </button>
           </nav>
 
           {/* Primary Action Button */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
             <button
               onClick={onOpenContact}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors whitespace-nowrap shrink-0 shadow-sm cursor-pointer"
             >
-              <span>Discuss a Project</span>
+              <span>Let's Connect</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -345,28 +360,40 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <button
-              onClick={() => handleNavSection('how-it-helps')}
-              className="text-left py-2.5 hover:text-white transition-colors cursor-pointer"
-            >
-              How It Helps
-            </button>
-            <button
               onClick={() => handleNavSection('services')}
               className="text-left py-2.5 hover:text-white transition-colors cursor-pointer"
             >
               Services
             </button>
             <button
-              onClick={() => handleNavSection('methodology')}
+              onClick={() => handleNavSection('why-automation')}
+              className="text-left py-2.5 hover:text-white transition-colors cursor-pointer"
+            >
+              Why Automation
+            </button>
+            <button
+              onClick={() => handleNavSection('process')}
               className="text-left py-2.5 hover:text-white transition-colors cursor-pointer"
             >
               How I Work
+            </button>
+            <button
+              onClick={() => handleNavSection('tech-stack')}
+              className="text-left py-2.5 hover:text-white transition-colors cursor-pointer"
+            >
+              Tech Stack
             </button>
             <button
               onClick={() => handleNavSection('about')}
               className="text-left py-2.5 hover:text-white transition-colors cursor-pointer"
             >
               About
+            </button>
+            <button
+              onClick={() => handleNavSection('faq')}
+              className="text-left py-2.5 hover:text-white transition-colors cursor-pointer"
+            >
+              FAQ
             </button>
           </div>
 
@@ -376,9 +403,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 setMobileMenuOpen(false);
                 onOpenContact();
               }}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors cursor-pointer shadow-md"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors cursor-pointer shadow-md"
             >
-              <span>Discuss a Project</span>
+              <span>Let's Connect</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>

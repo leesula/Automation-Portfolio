@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
-import { Capabilities } from './components/Capabilities';
+import { WhatIBuild } from './components/WhatIBuild';
+import { WhyAutomation } from './components/WhyAutomation';
 import { FeaturedProjects } from './components/FeaturedProjects';
-import { HowItHelpsYourBusiness } from './components/HowItHelpsYourBusiness';
-import { Services } from './components/Services';
 import { HowIWork } from './components/HowIWork';
+import { TechStack } from './components/TechStack';
 import { AboutMe } from './components/AboutMe';
+import { FAQ } from './components/FAQ';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { ProjectDetailPage } from './components/ProjectDetailPage';
@@ -124,9 +125,9 @@ export default function App() {
             onOpenFlowViewer={handleInspectWorkflows}
           />
         ) : (
-          /* VIEW 3: Main Landing Page (with Shortened Featured Projects section) */
+          /* VIEW 3: Main Landing Page (Structured into the 9 core sections) */
           <>
-            {/* Hero Section */}
+            {/* Section 1 — Hero */}
             <Hero
               onExploreProjects={() => handleNavigateSection('projects')}
               onDiscussProject={() => handleOpenContact()}
@@ -134,7 +135,18 @@ export default function App() {
               projects={projectsData}
             />
 
-            {/* Shortened Featured Projects Gallery (3-4 concise cards + View All Projects CTA) */}
+            {/* Section 2 — What I Build */}
+            <WhatIBuild 
+              onDiscussService={handleDiscussService}
+              onExploreProjects={() => handleNavigateSection('projects')}
+            />
+
+            {/* Section 3 — Why AI Automation? */}
+            <WhyAutomation 
+              onStartDiscussion={() => handleOpenContact()}
+            />
+
+            {/* Section 4 — My Projects */}
             <FeaturedProjects
               projects={projectsData}
               onSelectProject={(project) => navigateTo({ type: 'project-detail', slug: project.slug })}
@@ -142,27 +154,19 @@ export default function App() {
               onOpenFlowViewer={handleInspectWorkflows}
             />
 
-            {/* Specialized in Production-Ready Automation Systems (Capabilities) */}
-            <Capabilities />
-
-            {/* Client-Focused Section: How It Helps Your Business */}
-            <HowItHelpsYourBusiness
-              projects={projectsData}
-              initialProjectId={activeProjectIdForInspection}
-              onSelectProject={(slug) => navigateTo({ type: 'project-detail', slug })}
-              onDiscussProject={(title) => handleOpenContact(title)}
-            />
-
-            {/* Services & Deliverables */}
-            <Services onDiscussService={handleDiscussService} />
-
-            {/* How I Work Methodology */}
+            {/* Section 5 — How I Work */}
             <HowIWork onStartProject={() => handleOpenContact()} />
 
-            {/* About Me */}
-            <AboutMe />
+            {/* Section 6 — Technology Stack */}
+            <TechStack />
 
-            {/* Contact & Scope Inquiry */}
+            {/* Section 7 — About Me */}
+            <AboutMe onOpenBookingModal={() => handleNavigateSection('contact')} />
+
+            {/* Section 8 — FAQ */}
+            <FAQ onContactClick={() => handleOpenContact()} />
+
+            {/* Section 9 — Contact */}
             <ContactSection initialServiceInterest={selectedServiceInterest} />
           </>
         )}

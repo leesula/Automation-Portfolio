@@ -3,6 +3,7 @@
 @layer base {
   html {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    scroll-behavior: smooth;
   }
   
   code, pre, .font-mono {
@@ -24,4 +25,27 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
+}
+
+/* 3D Flip Card & Color Transition Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.transform-style-3d {
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Hover-to-flip card functionality for desktop */
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .group-hover-flip {
+    transform: rotateY(180deg);
+  }
 }

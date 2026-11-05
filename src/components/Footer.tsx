@@ -30,10 +30,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateSection }) => {
 
           <nav className="flex flex-wrap items-center gap-6 text-xs text-neutral-400 font-medium">
             <button
-              onClick={() => onNavigateSection('hero')}
+              onClick={() => onNavigateSection('services')}
               className="hover:text-neutral-100 transition-colors cursor-pointer"
             >
-              Home
+              Services
+            </button>
+            <button
+              onClick={() => onNavigateSection('why-automation')}
+              className="hover:text-neutral-100 transition-colors cursor-pointer"
+            >
+              Why Automation
             </button>
             <button
               onClick={() => onNavigateSection('projects')}
@@ -42,22 +48,28 @@ export const Footer: React.FC<FooterProps> = ({ onNavigateSection }) => {
               Projects
             </button>
             <button
-              onClick={() => onNavigateSection('how-it-helps')}
+              onClick={() => onNavigateSection('process')}
               className="hover:text-neutral-100 transition-colors cursor-pointer"
             >
-              How It Helps
+              How I Work
             </button>
             <button
-              onClick={() => onNavigateSection('services')}
+              onClick={() => onNavigateSection('tech-stack')}
               className="hover:text-neutral-100 transition-colors cursor-pointer"
             >
-              Services
+              Tech Stack
             </button>
             <button
-              onClick={() => onNavigateSection('methodology')}
+              onClick={() => onNavigateSection('about')}
               className="hover:text-neutral-100 transition-colors cursor-pointer"
             >
-              Methodology
+              About
+            </button>
+            <button
+              onClick={() => onNavigateSection('faq')}
+              className="hover:text-neutral-100 transition-colors cursor-pointer"
+            >
+              FAQ
             </button>
             <button
               onClick={() => onNavigateSection('contact')}

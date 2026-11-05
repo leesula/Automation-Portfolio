@@ -1,133 +1,140 @@
 import React from 'react';
 import { siteConfig } from '../data/projects';
-import { Mail, Calendar, Github, Linkedin, CheckCircle2, ArrowUpRight } from 'lucide-react';
+import { Mail, Calendar, Linkedin, Github, CheckCircle2, ArrowUpRight, MessageSquare } from 'lucide-react';
 import { recordCallBookingToSupabase } from '../lib/supabase';
 
-export const AboutMe: React.FC = () => {
+interface AboutMeProps {
+  onOpenBookingModal?: () => void;
+}
+
+export const AboutMe: React.FC<AboutMeProps> = ({ onOpenBookingModal }) => {
   return (
-    <section id="about" className="py-24 bg-neutral-900 border-b border-neutral-800 text-neutral-100">
+    <section id="about" className="py-24 bg-neutral-950 border-b border-neutral-900 text-neutral-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Left Column: Personal Intro & Philosophy */}
           <div className="lg:col-span-7 space-y-6">
             <div>
-              <span className="text-xs font-mono uppercase tracking-wider text-indigo-400 block mb-2">
-                About the Builder
-              </span>
+              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold mb-2">
+                <span>Section 07</span>
+                <span className="text-neutral-700">·</span>
+                <span>Background</span>
+              </div>
               <h2 className="text-3xl sm:text-4xl font-bold text-neutral-50 tracking-tight">
-                {siteConfig.builderName}
+                About Me
               </h2>
-              <p className="text-base text-indigo-300 font-medium mt-1">
-                {siteConfig.roleTitle}
+              <p className="text-sm font-medium text-indigo-400 font-mono mt-1">
+                {siteConfig.builderName} — {siteConfig.roleTitle}
               </p>
             </div>
 
-            <p className="text-sm sm:text-base text-neutral-300 leading-relaxed">
-              {siteConfig.bio}
+            {/* Exact Suggested Brief Content */}
+            <p className="text-base sm:text-lg text-neutral-200 leading-relaxed font-normal">
+              I enjoy building practical automation systems that connect AI, business applications, and everyday workflows. My focus is on creating solutions that are useful, understandable, and easier for businesses to manage.
             </p>
 
+            <p className="text-sm text-neutral-400 leading-relaxed">
+              Rather than building complex, fragile experiments, I prioritize deterministic reliability: validating data, organizing customer details, setting up error alerting, and ensuring workflows operate seamlessly in the background without needing constant oversight.
+            </p>
+
+            {/* Core Values List */}
             <div className="space-y-3 pt-2 text-xs sm:text-sm text-neutral-300">
               <div className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Deterministic Reliability First:</strong> I build workflows using robust validation, idempotent database operations, and strict error handlers before relying on generative AI.
+                  <strong>Client-First Clarity:</strong> Workflows are documented and structured so business owners understand how data moves through their systems.
                 </span>
               </div>
               <div className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Clean Data Contracts:</strong> Every form input and webhook is normalized, sanitized, and stored with clear relational constraints.
+                  <strong>Practical Tools:</strong> Built on industry-standard software like WhatsApp, Supabase, n8n, and Google Workspace that your team already knows.
                 </span>
               </div>
               <div className="flex items-start gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Autonomous Fault Trapping:</strong> Failures trigger structured alerts with execution IDs and diagnostic stacks so issues can be resolved before clients notice.
+                  <strong>Safe & Auditable:</strong> Built-in notifications and approval steps ensure humans retain full oversight over sensitive customer interactions.
                 </span>
               </div>
             </div>
 
-            {/* Editable Profile Links */}
-            <div className="pt-6 border-t border-neutral-800 flex flex-wrap items-center gap-4 text-xs font-mono">
+            {/* Working Links & Direct Channels */}
+            <div className="pt-6 border-t border-neutral-850 flex flex-wrap items-center gap-3 text-xs font-mono">
               <a
                 href={`mailto:${siteConfig.email}`}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-750 hover:-translate-y-0.5 transition-all duration-200"
               >
                 <Mail className="w-3.5 h-3.5 text-indigo-400" />
                 <span>{siteConfig.email}</span>
               </a>
-
-              <a
-                href={siteConfig.calLink}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => {
-                  recordCallBookingToSupabase({
-                    calLink: siteConfig.calLink,
-                    source: 'about_me_cal_link',
-                    status: 'initiated'
-                  }).catch(console.error);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors"
-              >
-                <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Book a Call via Cal.com</span>
-                <ArrowUpRight className="w-3 h-3 text-neutral-500" />
-              </a>
-
               <a
                 href={siteConfig.linkedin}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-750 hover:-translate-y-0.5 transition-all duration-200"
               >
                 <Linkedin className="w-3.5 h-3.5 text-indigo-400" />
-                <span>LinkedIn Profile</span>
+                <span>LinkedIn</span>
                 <ArrowUpRight className="w-3 h-3 text-neutral-500" />
               </a>
             </div>
 
           </div>
 
-          {/* Right Column: Engineering Principles Card */}
+          {/* Right Column: Clean Personal Brand Card */}
           <div className="lg:col-span-5">
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-6 sm:p-8 space-y-6 shadow-xl">
-              <span className="text-xs font-mono uppercase tracking-wider text-neutral-400 block pb-3 border-b border-neutral-850">
-                Core Stack & Working Toolkit
-              </span>
-
-              <div className="space-y-4 text-xs">
-                <div>
-                  <span className="font-semibold text-neutral-200 block mb-1">Orchestration & Logic</span>
-                  <p className="text-neutral-400 font-mono">n8n (Self-hosted & Cloud), Node.js, Custom ES6 Transformations</p>
-                </div>
-
-                <div>
-                  <span className="font-semibold text-neutral-200 block mb-1">Databases & Storage</span>
-                  <p className="text-neutral-400 font-mono">Supabase (PostgreSQL), Google Sheets API (Legacy sync)</p>
-                </div>
-
-                <div>
-                  <span className="font-semibold text-neutral-200 block mb-1">Communication & Messaging</span>
-                  <p className="text-neutral-400 font-mono">Gmail API (OAuth2), Slack Bot API, Webhook Handlers</p>
-                </div>
-
-                <div>
-                  <span className="font-semibold text-neutral-200 block mb-1">Scheduling & Forms</span>
-                  <p className="text-neutral-400 font-mono">Cal.com, Tally Forms, Custom Webhooks</p>
-                </div>
-
-                <div>
-                  <span className="font-semibold text-neutral-200 block mb-1">Security & Standards</span>
-                  <p className="text-neutral-400 font-mono">HMAC cryptographic tokenization, CAN-SPAM compliance, Error triage</p>
-                </div>
+            <div className="rounded-2xl border border-neutral-850 bg-neutral-950 hover:border-neutral-750 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden group">
+              <div className="space-y-1">
+                <span className="text-xs font-mono uppercase tracking-wider text-neutral-500 block">
+                  Profile Summary
+                </span>
+                <h3 className="text-xl font-bold text-neutral-100">
+                  {siteConfig.builderName}
+                </h3>
+                <p className="text-xs font-mono text-indigo-400">
+                  {siteConfig.roleTitle} · {siteConfig.location}
+                </p>
               </div>
 
-              <div className="p-4 rounded-xl bg-neutral-900/60 border border-neutral-850 text-xs text-neutral-400 leading-relaxed">
-                <span className="text-neutral-200 font-semibold block mb-1">No Vendor Lock-In:</span>
-                Workflows and database schemas are built directly in your instances so your company retains 100% intellectual property and control.
+              <div className="p-4 rounded-xl bg-neutral-900/50 border border-neutral-850 space-y-2 text-xs">
+                <span className="font-semibold text-neutral-300 block">Primary Specializations:</span>
+                <ul className="space-y-1.5 text-neutral-400">
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                    <span>Conversational AI Agents (WhatsApp & Spoken Voice)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                    <span>Lead Intake, Qualification & Scoring Pipelines</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                    <span>CRM & Database Synchronization (Supabase, Sheets)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                    <span>Live Calendar Verification & Appointment Booking</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    if (onOpenBookingModal) {
+                      onOpenBookingModal();
+                    } else {
+                      window.open(siteConfig.calLink, '_blank');
+                    }
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all cursor-pointer shadow-md shadow-indigo-600/20"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Book a 20-min Discovery Call</span>
+                </button>
               </div>
             </div>
           </div>

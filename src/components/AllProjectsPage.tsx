@@ -182,6 +182,19 @@ export const AllProjectsPage: React.FC<AllProjectsPageProps> = ({
                         {project.solution}
                       </p>
                     </div>
+
+                    {/* Dedicated Business Impact Highlight */}
+                    {(project.cardBenefit || project.businessImpact?.cardBenefit) && (
+                      <div className="p-3 rounded-lg bg-indigo-950/35 border border-indigo-800/50 space-y-1">
+                        <div className="flex items-center gap-1.5 text-indigo-300 font-semibold text-[10px] uppercase font-mono tracking-wider">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                          <span>Business Impact:</span>
+                        </div>
+                        <p className="text-neutral-200 leading-relaxed text-xs">
+                          {project.cardBenefit || project.businessImpact?.cardBenefit}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Tech stack badges */}

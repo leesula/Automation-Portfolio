@@ -16,7 +16,11 @@ import {
   Briefcase,
   Code2,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  XCircle,
+  TrendingUp,
+  BarChart3,
+  Target
 } from 'lucide-react';
 
 interface CaseStudyModalProps {
@@ -449,11 +453,54 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
                 </div>
               </section>
 
-              {/* Subsection: Intended Business Outcomes & Honest Notice */}
-              <section className="space-y-4 pt-6 border-t border-neutral-900">
-                <h2 className="text-xl font-bold text-neutral-100">
-                  Intended Business Outcomes
-                </h2>
+              {/* Subsection: Business Impact & Process Transformation */}
+              <section className="space-y-6 pt-6 border-t border-neutral-900">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold">
+                      Business Impact
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-bold text-neutral-100">
+                    Tangible Operational Impact
+                  </h2>
+                </div>
+
+                {/* Before vs. With Automation Comparison Box */}
+                {project.businessImpact?.beforeVsAfter && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-red-950/20 border border-red-900/35 space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-bold font-mono uppercase tracking-wider text-red-400">
+                        <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                        <span>{project.businessImpact.beforeVsAfter.beforeTitle || 'Before Automation'}</span>
+                      </div>
+                      <ul className="space-y-2 text-xs text-neutral-300">
+                        {project.businessImpact.beforeVsAfter.before.map((point, pIdx) => (
+                          <li key={pIdx} className="flex items-start gap-2 leading-relaxed">
+                            <span className="text-red-400 font-mono text-[11px] shrink-0 mt-0.5">•</span>
+                            <span>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-emerald-950/25 border border-emerald-900/40 space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-bold font-mono uppercase tracking-wider text-emerald-400">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>{project.businessImpact.beforeVsAfter.afterTitle || 'With AI Workflow Automation'}</span>
+                      </div>
+                      <ul className="space-y-2 text-xs text-neutral-200">
+                        {project.businessImpact.beforeVsAfter.after.map((point, pIdx) => (
+                          <li key={pIdx} className="flex items-start gap-2 leading-relaxed">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <span>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {caseStudy.businessValue.potentialBenefits.map((benefit, bIdx) => (
@@ -464,10 +511,12 @@ export const CaseStudyModal: React.FC<CaseStudyModalProps> = ({
                   ))}
                 </div>
 
-                <div className="p-3.5 rounded-lg bg-neutral-900/60 border border-neutral-800 flex items-start gap-2.5 text-xs text-neutral-400">
-                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <span>{caseStudy.businessValue.unverifiedNotice}</span>
-                </div>
+                {caseStudy.businessValue.unverifiedNotice && (
+                  <div className="p-3.5 rounded-lg bg-neutral-900/60 border border-neutral-800 flex items-start gap-2.5 text-xs text-neutral-400">
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <span>{caseStudy.businessValue.unverifiedNotice}</span>
+                  </div>
+                )}
               </section>
             </div>
 

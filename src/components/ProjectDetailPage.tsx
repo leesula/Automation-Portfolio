@@ -20,7 +20,11 @@ import {
   Layers,
   PhoneCall,
   Clock,
-  ChevronRight
+  ChevronRight,
+  TrendingUp,
+  BarChart3,
+  Target,
+  XCircle
 } from 'lucide-react';
 
 interface ProjectDetailPageProps {
@@ -512,32 +516,136 @@ export const ProjectDetailPage: React.FC<ProjectDetailPageProps> = ({
               </div>
             </section>
 
-            {/* Subsection: Business Value & Return on Investment */}
-            <section className="space-y-4 pt-6 border-t border-neutral-900">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold">
-                  Business Value & ROI
-                </span>
+            {/* Subsection: Dedicated Business Impact Section */}
+            <section className="space-y-8 pt-8 border-t border-neutral-900">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Business Impact</span>
+                  </span>
+                  <span className="text-neutral-700">·</span>
+                  <span className="text-xs font-mono text-neutral-400">
+                    How This Helps Your Business
+                  </span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-neutral-100 tracking-tight">
+                  Practical Outcomes Beyond The Technology
+                </h2>
+                <p className="text-sm sm:text-base text-neutral-300 leading-relaxed max-w-3xl">
+                  {project.businessImpact?.summary || 
+                    "This automation is built to eliminate manual friction, reduce response times, and prevent missed opportunities by executing reliable business rules without requiring constant human intervention."}
+                </p>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-neutral-100">
-                Tangible Operational Gains
-              </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {caseStudy.businessValue.potentialBenefits.map((benefit, i) => (
+              {/* Impact Statements Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(project.businessImpact?.impactStatements || []).map((statement, idx) => (
                   <div
-                    key={i}
-                    className="p-4 rounded-xl bg-neutral-900/30 border border-neutral-800/60 flex items-start gap-2.5 text-xs text-neutral-200"
+                    key={idx}
+                    className="p-5 rounded-xl bg-neutral-900/60 border border-neutral-800/80 hover:border-neutral-700/80 transition-all flex flex-col justify-between space-y-3"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span className="leading-relaxed">{benefit}</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-md bg-emerald-950/80 border border-emerald-800/80 text-emerald-400 text-xs font-mono font-bold flex items-center justify-center">
+                          0{idx + 1}
+                        </span>
+                        <h3 className="text-sm font-bold text-neutral-100">
+                          {statement.title}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-neutral-300 leading-relaxed">
+                        {statement.description}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400/90 pt-1 border-t border-neutral-850">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span>Operational Improvement</span>
+                    </div>
                   </div>
                 ))}
               </div>
 
-              {caseStudy.businessValue.unverifiedNotice && (
-                <div className="p-3.5 rounded-lg bg-neutral-950 border border-neutral-850 text-xs text-neutral-400 font-mono leading-relaxed">
-                  {caseStudy.businessValue.unverifiedNotice}
+              {/* Before Automation vs. With Automation Comparison */}
+              {project.businessImpact?.beforeVsAfter && (
+                <div className="p-6 sm:p-7 rounded-2xl bg-neutral-900/40 border border-neutral-800 space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-neutral-800 gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono uppercase tracking-wider text-indigo-400 font-semibold">
+                        Process Transformation
+                      </span>
+                      <span className="text-neutral-700">·</span>
+                      <span className="text-xs text-neutral-400">
+                        Operational Comparison
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-mono text-neutral-400">
+                      Eliminating Bottlenecks
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Before Automation */}
+                    <div className="p-5 rounded-xl bg-red-950/15 border border-red-900/30 space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-bold font-mono uppercase tracking-wider text-red-400">
+                        <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                        <span>{project.businessImpact.beforeVsAfter.beforeTitle || 'Before Automation (Manual Process)'}</span>
+                      </div>
+                      <ul className="space-y-2.5 text-xs text-neutral-300">
+                        {project.businessImpact.beforeVsAfter.before.map((point, pIdx) => (
+                          <li key={pIdx} className="flex items-start gap-2 leading-relaxed">
+                            <span className="text-red-400 font-mono text-[11px] shrink-0 mt-0.5">•</span>
+                            <span>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* With Automation */}
+                    <div className="p-5 rounded-xl bg-emerald-950/20 border border-emerald-900/40 space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-bold font-mono uppercase tracking-wider text-emerald-400">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>{project.businessImpact.beforeVsAfter.afterTitle || 'With AI Workflow Automation'}</span>
+                      </div>
+                      <ul className="space-y-2.5 text-xs text-neutral-200">
+                        {project.businessImpact.beforeVsAfter.after.map((point, pIdx) => (
+                          <li key={pIdx} className="flex items-start gap-2 leading-relaxed">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                            <span>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Potential Metrics to Measure */}
+              {project.businessImpact?.potentialMetrics && project.businessImpact.potentialMetrics.length > 0 && (
+                <div className="p-5 rounded-xl bg-neutral-900/50 border border-neutral-800 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-neutral-200">
+                      Potential Metrics to Measure
+                    </h3>
+                  </div>
+                  <p className="text-xs text-neutral-400 leading-relaxed">
+                    When evaluating this automation for your business, here are key operational indicators to track before and after implementation:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    {project.businessImpact.potentialMetrics.map((metric, mIdx) => (
+                      <div
+                        key={mIdx}
+                        className="px-3.5 py-2.5 rounded-lg bg-neutral-950 border border-neutral-850 flex items-center gap-2 text-xs text-neutral-300"
+                      >
+                        <Target className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span>{metric}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-neutral-500 font-mono pt-1">
+                    Note: Metrics reflect qualitative operational goals. Actual results depend on inbound inquiry volume, sales cycle duration, and response processes.
+                  </p>
                 </div>
               )}
             </section>

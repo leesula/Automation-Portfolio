@@ -46,7 +46,7 @@ export const Hero: React.FC<HeroProps> = ({
   };
 
   return (
-    <section id="hero" className="relative pt-12 pb-20 md:pt-20 md:pb-32 overflow-hidden bg-neutral-950 border-b border-neutral-900">
+    <section id="hero" className="relative pt-12 pb-20 md:pt-20 md:pb-32 overflow-hidden bg-neutral-950 border-b border-neutral-900 transition-colors duration-500">
       {/* Background subtle radial grid */}
       <div 
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -82,29 +82,29 @@ export const Hero: React.FC<HeroProps> = ({
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-bold text-neutral-50 tracking-tight leading-[1.14]">
-              I build AI automations that save businesses time.
+              I Build AI Automations That Make Business Work Easier.
             </h1>
 
             {/* Concise Supporting Text */}
             <p className="text-base sm:text-lg text-neutral-300 max-w-2xl leading-relaxed">
-              I build AI agents and business automations that help businesses manage leads, streamline operations, and connect their tools.
+              I create practical AI agents and automation systems that help businesses manage leads, automate repetitive tasks, and streamline everyday operations.
             </p>
 
             {/* Two Clear Call to Action Buttons */}
             <div className="pt-2 flex flex-wrap items-center gap-4">
               <button
                 onClick={onExploreProjects}
-                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-all shadow-sm hover:shadow-indigo-500/20 cursor-pointer"
+                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg hover:-translate-y-0.5 transition-all duration-200 shadow-sm hover:shadow-indigo-500/20 active:scale-[0.98] cursor-pointer"
               >
-                <span>Explore My Projects</span>
+                <span>View My Projects</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
               <button
                 onClick={onDiscussProject}
-                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-neutral-200 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-neutral-200 bg-neutral-900 hover:bg-neutral-800 hover:text-white hover:-translate-y-0.5 border border-neutral-800 rounded-lg transition-all duration-200 active:scale-[0.98] cursor-pointer"
               >
-                <span>Discuss a Project</span>
+                <span>Let's Connect</span>
                 <ArrowUpRight className="w-4 h-4 text-neutral-400" />
               </button>
             </div>
@@ -129,7 +129,7 @@ export const Hero: React.FC<HeroProps> = ({
 
           {/* Right Column: Project-Specific Workflow Preview */}
           <div className="lg:col-span-5">
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/80 p-5 sm:p-6 shadow-2xl backdrop-blur-sm space-y-5">
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/90 hover:border-neutral-700/80 p-5 sm:p-6 shadow-2xl backdrop-blur-sm space-y-5 transition-all duration-300 hover:shadow-indigo-950/20">
               
               {/* Header: Honest Workflow Preview */}
               <div className="flex items-center justify-between pb-3 border-b border-neutral-800">

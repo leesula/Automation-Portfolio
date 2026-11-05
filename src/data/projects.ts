@@ -2,14 +2,15 @@ import { Project, ServiceItem, WorkProcessStep } from '../types/portfolio';
 
 export const siteConfig = {
   builderName: "Sudha Leela",
-  roleTitle: "AI Automation Builder & Workflow Architect",
-  tagline: "I build AI automations that save businesses time.",
+  roleTitle: "AI Automation Builder",
+  tagline: "I Build AI Automations That Make Business Work Easier.",
   location: "Global / Remote",
   email: "sudhaleela222@gmail.com",
   calLink: "https://cal.com/chweet-girl-bsfmon/",
   github: "https://github.com",
   linkedin: "https://linkedin.com",
-  bio: "I design and build autonomous workflow systems, CRM pipelines, and intelligent AI agents using n8n, Supabase, LangChain, WhatsApp Cloud API, and modern LLMs. My focus is on deterministic reliability, clean data contracts, clinical/business safety guardrails, and practical impact—ensuring every automation eliminates manual friction while remaining auditable, maintainable, and secure.",
+  whatsappLink: "https://wa.me/?text=Hi%20Sudha,%20I'd%20like%20to%20discuss%20an%20AI%20automation%20project",
+  bio: "I enjoy building practical automation systems that connect AI, business applications, and everyday workflows. My focus is on creating solutions that are useful, understandable, and easier for businesses to manage.",
 };
 
 export const capabilitiesList = [
@@ -58,6 +59,55 @@ export const projectsData: Project[] = [
     slug: "voice-agent-buyer-qualification-vapi",
     category: "Voice AI & Customer Intake",
     tagline: "An autonomous voice agent that conducts spoken buyer qualification calls, checks Google Calendar availability in real time, and books verified appointments.",
+    cardBenefit: "Answers buyer calls 24/7 with zero wait time, captures qualification criteria in spoken conversation, and books verified calendar slots.",
+    businessImpact: {
+      summary: "In real estate, speed-to-lead is critical. High-intent callers who encounter voicemail often contact competitors immediately. This voice automation provides instant, 24/7 spoken phone qualification, eliminates phone tag, and books confirmed consultations with real-time calendar conflict prevention.",
+      cardBenefit: "Answers buyer calls 24/7 with zero wait time, captures qualification criteria in spoken conversation, and books verified calendar slots.",
+      impactStatements: [
+        {
+          title: "Faster Customer Response",
+          description: "Answers inbound phone leads immediately around the clock with zero hold time, engaging prospects while their buying intent is highest."
+        },
+        {
+          title: "Fewer Missed Inquiries",
+          description: "Eliminates lost commissions from missed calls during broker showings, property walkthroughs, or after-hours inquiries."
+        },
+        {
+          title: "Reduced Repetitive Screening Work",
+          description: "Automates repetitive initial 15-minute qualification interviews, capturing budget, timeline, location, and bedrooms consistently."
+        },
+        {
+          title: "Streamlined Appointment Booking",
+          description: "Queries live Google Calendar availability in Eastern Time and confirms appointments with automated email invites and letter-by-letter email verification."
+        },
+        {
+          title: "Better Coordination Between Team Members",
+          description: "Instantly delivers verified buyer dossiers, audio recordings, and transcripts directly to the sales Slack channel and Supabase CRM."
+        }
+      ],
+      beforeVsAfter: {
+        beforeTitle: "Before Automation (Manual Inbound Calls)",
+        before: [
+          "Calls ring during broker showings and drop to voicemail; 80% of buyers never leave a message.",
+          "Brokers spend 15–20 minutes on basic telephone screening questions per caller.",
+          "Notes scribbled on paper or entered haphazardly into spreadsheets with missing fields.",
+          "Scheduling requires manual phone tag or texting back and forth to find open calendar slots."
+        ],
+        afterTitle: "With Voice AI Automation",
+        after: [
+          "100% of calls answered in seconds 24/7 with natural conversational speech.",
+          "Structured qualification criteria captured and saved directly into Supabase.",
+          "Live Google Calendar FreeBusy lookup offers verified 30-minute consultation slots.",
+          "Advisors receive instant Slack notifications with full buyer context before every call."
+        ]
+      },
+      potentialMetrics: [
+        "Inbound call answer rate and zero-wait response time",
+        "Percentage of inbound callers successfully qualified and scheduled",
+        "Hours of manual phone screening saved per advisor weekly",
+        "Calendar attendance rate facilitated by instant automated email invites"
+      ]
+    },
     problem: "Inbound phone leads for real estate agencies frequently hit voicemail during peak showing hours. Human staff spend 15–20 minutes per call manually asking basic qualification questions (location, bedrooms, budget, financing, timeline), manually typing notes into spreadsheets, and checking calendars while on the phone.",
     solution: "Engineered an autonomous real-time Voice AI pipeline using Vapi and n8n webhooks. The voice agent verbally interviews prospective buyers, cleans and normalizes speech transcriptions into Supabase PostgreSQL, calculates lead completeness, performs live Google Calendar FreeBusy queries for 30-minute consultation slots with 3h notice, verifies attendee email spelling, creates the calendar event with automated invites, and fires a rich Slack alert.",
     implementationStatus: "Configured & Tested",
@@ -377,6 +427,55 @@ export const projectsData: Project[] = [
     slug: "real-estate-qualification-whatsapp-v2",
     category: "WhatsApp & Messaging Automation",
     tagline: "An intelligent WhatsApp assistant that qualifies property buyers, debounces rapid messages, matches listings, and books verified property showings.",
+    cardBenefit: "Engages WhatsApp property leads in seconds, debounces rapid messages, matches active listings, and books verified viewings directly on Google Calendar.",
+    businessImpact: {
+      summary: "Real estate agencies receive high volumes of property inquiries through WhatsApp. When brokers take hours to respond, leads turn cold or contact competing agencies. This solution provides immediate 24/7 conversational qualification, organizes buyer records in Supabase, and schedules verified viewings directly on the advisor's calendar.",
+      cardBenefit: "Engages WhatsApp property leads in seconds, debounces rapid messages, matches active listings, and books verified viewings directly on Google Calendar.",
+      impactStatements: [
+        {
+          title: "Faster Customer Response",
+          description: "Responds to incoming WhatsApp property inquiries within seconds 24/7, keeping prospective buyers engaged in their preferred messaging channel."
+        },
+        {
+          title: "Better Lead Organization",
+          description: "Gathers property preferences—location, budget, property type, and timeline—and structures them into organized Supabase buyer records."
+        },
+        {
+          title: "More Consistent Qualification",
+          description: "Applies a structured 100-point qualification rubric to every lead, ensuring no critical criteria are missed during busy periods."
+        },
+        {
+          title: "Direct Showing Scheduling",
+          description: "Checks live Google Calendar availability and books confirmed property viewing appointments with double-verification."
+        },
+        {
+          title: "Seamless Team Escalation",
+          description: "Escalates non-standard questions (such as pet policies or price discussions) to the sales team on Slack with 1-click approvals."
+        }
+      ],
+      beforeVsAfter: {
+        beforeTitle: "Before Automation (Manual WhatsApp Handling)",
+        before: [
+          "Inbound WhatsApp messages sit unread for hours while brokers are at client viewings.",
+          "Brokers manually ask repetitive questions across fragmented, chaotic chat threads.",
+          "Rapid multi-part texts ('2 BHK' / 'Madhapur' / '80L') lead to confusing, disjointed responses.",
+          "Viewing appointments scheduled through tedious manual coordination across personal calendars."
+        ],
+        afterTitle: "With WhatsApp Automation",
+        after: [
+          "Inquiries greeted and qualified within seconds 24/7 on WhatsApp.",
+          "8-second message debouncer synthesizes rapid chat bursts into one clear query.",
+          "Automated listing matching recommends verified properties directly in chat.",
+          "Double-verified Google Calendar booking confirms viewing slots with zero double-booking risk."
+        ]
+      },
+      potentialMetrics: [
+        "First-response latency to inbound WhatsApp property inquiries",
+        "Buyer qualification completion rate across WhatsApp chats",
+        "Viewing appointment booking rate for qualified buyers",
+        "Hours of manual broker chat time eliminated per week"
+      ]
+    },
     problem: "Real estate agencies lose high-intent buyers because human agents take hours to respond to WhatsApp inquiries, fail to qualify buyer budgets and timelines systematically, and struggle to manage calendar slot booking while handling multiple concurrent inquiries.",
     solution: "Engineered an autonomous multi-workflow WhatsApp qualification engine in n8n featuring 8-second message burst debouncing in Supabase, LangChain tool-calling agent with OpenRouter & Google Gemma models, automated property matching against Supabase inventory, human-in-the-loop Slack approval for complex customer inquiries, and two-way verified Google Calendar appointment booking.",
     implementationStatus: "Configured & Tested",
@@ -749,6 +848,55 @@ export const projectsData: Project[] = [
     slug: "sales-pipeline-automation",
     category: "Sales & CRM Operations",
     tagline: "An automated sales system that captures form inquiries, scores leads objectively, sends personalized follow-ups with 1-click unsubscribes, and syncs booked meetings.",
+    cardBenefit: "Scores website leads on a 100-point scale in 60 seconds, dispatches personalized email sequences, auto-halts on reply, and syncs meetings into a live CRM.",
+    businessImpact: {
+      summary: "Inbound website inquiries often face delayed responses, inconsistent follow-ups, and disconnected spreadsheets. This automated sales engine qualifies leads objectively, categorizes them into actionable tiers, dispatches personalized follow-ups, and keeps reps updated via instant alerts and a live interactive CRM dashboard.",
+      cardBenefit: "Scores website leads on a 100-point scale in 60 seconds, dispatches personalized email sequences, auto-halts on reply, and syncs meetings into a live CRM.",
+      impactStatements: [
+        {
+          title: "Objective Lead Prioritization",
+          description: "Evaluates incoming inquiries using a 100-point rubric across budget, company size, and title, immediately identifying high-value accounts."
+        },
+        {
+          title: "More Consistent Follow-Ups",
+          description: "Maintains structured multi-stage email cadences with tamper-proof 1-click unsubscribes, ensuring no inquiry goes cold."
+        },
+        {
+          title: "Zero Awkward Cold Touches",
+          description: "Automatically halts automated sequences the second an inbound reply is detected and alerts sales reps for personal takeover."
+        },
+        {
+          title: "Seamless Meeting Reconciliation",
+          description: "Automatically captures Cal.com bookings, maps attendees to their database record, and advances deal stages without manual data entry."
+        },
+        {
+          title: "Single-Pane Pipeline Visibility",
+          description: "Provides an interactive web CRM dashboard and morning Slack digests for complete real-time visibility into pipeline momentum."
+        }
+      ],
+      beforeVsAfter: {
+        beforeTitle: "Before Automation (Manual Lead Operations)",
+        before: [
+          "Inquiries sit in generic inboxes for hours; high-ticket leads receive the same delayed handling as low-intent submissions.",
+          "Reps manually copy and paste submission details into spreadsheets, leading to typos and duplicate rows.",
+          "Follow-ups sent sporadically from individual rep inboxes, often abandoned after a single attempt.",
+          "Booked calendar meetings exist in silos, requiring manual reconciliation against pipeline notes."
+        ],
+        afterTitle: "With Automated Sales Pipeline",
+        after: [
+          "Leads scored, tiered (Enterprise, Mid-Market, Nurture), and saved to Supabase in under 60 seconds.",
+          "High-tier inquiries trigger instant Slack sales alerts and VIP personalized outreach.",
+          "Sequences stop immediately upon prospect reply, passing conversation history to the assigned rep.",
+          "Cal.com bookings automatically update lead stage to 'meeting_scheduled' in the live CRM dashboard."
+        ]
+      },
+      potentialMetrics: [
+        "Speed to lead contact for high-tier enterprise inquiries",
+        "Lead-to-meeting conversion rate from inbound form submissions",
+        "Adherence rate to multi-touch follow-up cadences",
+        "Manual CRM data entry and spreadsheet logging time eliminated"
+      ]
+    },
     problem: "Inbound leads arrived unverified into disjointed spreadsheets, resulting in slow response times, missed enterprise opportunities, lack of follow-up consistency, and zero automated CRM sync when prospects booked meetings.",
     solution: "Architected a synchronized 7-workflow automation architecture in n8n backed by Supabase PostgreSQL and a live interactive CRM dashboard. The system normalizes form data, prevents duplicate submissions, scores prospects on a 100-point scale across 3 tiers, triggers personalized Gmail follow-ups with secure cryptographic unsubscribes, updates lead state upon incoming reply detection, and auto-links Cal.com bookings.",
     implementationStatus: "Configured & Tested",
@@ -1283,6 +1431,50 @@ export const projectsData: Project[] = [
     slug: "personal-assistant-schedule-agent",
     category: "Productivity & Executive Support",
     tagline: "A conversational assistant that creates, updates, and organizes tasks in Google Sheets from natural language prompts, with real-time web research tools.",
+    cardBenefit: "Converts conversational chat commands into structured Google Sheets tasks, normalizes relative dates, and prevents duplicate entries.",
+    businessImpact: {
+      summary: "Busy executives and professionals lose valuable focus manually formatting, updating, and sorting spreadsheet trackers. This conversational assistant enables hands-free task management, standardizing dates, preventing duplicates, and searching the web—all from conversational prompts.",
+      cardBenefit: "Converts conversational chat commands into structured Google Sheets tasks, normalizes relative dates, and prevents duplicate entries.",
+      impactStatements: [
+        {
+          title: "Reduced Repetitive Admin Work",
+          description: "Eliminates constant spreadsheet navigation, manual column formatting, and status toggling through quick conversational commands."
+        },
+        {
+          title: "Structured Information & Data Integrity",
+          description: "Normalizes relative dates ('tomorrow', 'next Friday') into standardized M/D/YYYY calendar formats, protecting spreadsheet cleanliness."
+        },
+        {
+          title: "Fewer Duplicate Entries",
+          description: "Performs lookups before creating records, updating existing tasks instead of generating confusing duplicate rows."
+        },
+        {
+          title: "Contextual Information Retrieval",
+          description: "Incorporates live web search to retrieve facts, links, and references directly into the conversational workflow without switching tabs."
+        }
+      ],
+      beforeVsAfter: {
+        beforeTitle: "Before Automation (Manual Spreadsheet Tracking)",
+        before: [
+          "Repeatedly opening Google Drive, loading spreadsheets, and scrolling through hundreds of rows to add or update tasks.",
+          "Manually calculating calendar dates for relative phrases, leading to inconsistent date formats that break sorting.",
+          "Accidentally adding duplicate tasks during busy workdays.",
+          "Switching between tabs to research links or background context for task entries."
+        ],
+        afterTitle: "With AI Assistant Automation",
+        after: [
+          "Natural conversational input via chat handles task creation and status updates hands-free.",
+          "Standardized date formats (M/D/YYYY) automatically enforced across all records.",
+          "Pre-creation lookups verify whether a task exists and update its status instead of duplicating.",
+          "Integrated web search retrieves external facts and references directly in the chat flow."
+        ]
+      },
+      potentialMetrics: [
+        "Consistency and timeliness of daily task updates",
+        "Reduction in daily administrative time spent navigating and formatting spreadsheets",
+        "Zero data-entry formatting errors and corrupted date schemas"
+      ]
+    },
     problem: "Professionals lose time constantly manually opening, formatting, sorting, and modifying spreadsheet task trackers. Natural language inputs ('schedule n8n study tomorrow', 'mark review complete') fail standard spreadsheet schemas, create messy duplicates, and lack conversational context.",
     solution: "Engineered an autonomous AI Agent in n8n leveraging LangChain, Groq (gpt-oss-safeguard-20b) and OpenRouter (o3-mini:batch) models with Window Buffer Memory. The agent is empowered with a Google Sheets appendOrUpdate tool and live SerpApi search tools, enforcing strict M/D/YYYY date conversions, relative date parsing, duplicate prevention, and verified tool-execution reporting.",
     implementationStatus: "Configured & Tested",
@@ -1495,6 +1687,50 @@ export const projectsData: Project[] = [
     slug: "whatsapp-nutrition-agent",
     category: "Healthcare & Lifestyle Automation",
     tagline: "A personalized WhatsApp health assistant that provides whole-food nutritional guidance with built-in clinical emergency guardrails.",
+    cardBenefit: "Delivers 24/7 personalized WhatsApp nutrition coaching with clinical emergency triage guardrails and private per-user memory.",
+    businessImpact: {
+      summary: "Wellness clinics and fitness coaches struggle to support clients with daily dietary questions between sessions. This WhatsApp solution provides instant, culturally adaptable meal habit guidance while strictly enforcing clinical safety triage for medical symptoms.",
+      cardBenefit: "Delivers 24/7 personalized WhatsApp nutrition coaching with clinical emergency triage guardrails and private per-user memory.",
+      impactStatements: [
+        {
+          title: "Continuous Client Engagement",
+          description: "Provides 24/7 answers to daily meal and habit questions directly inside WhatsApp, supporting clients when food choices are made."
+        },
+        {
+          title: "Clinical Safety & Risk Protection",
+          description: "Instantly detects acute medical red flags (such as chest pain or shortness of breath) and directs users to emergency healthcare."
+        },
+        {
+          title: "Strict User Privacy",
+          description: "Isolates conversation history per WhatsApp phone ID (wa_id), ensuring private, non-leaking consultation context."
+        },
+        {
+          title: "Culturally Familiar Habit Guidance",
+          description: "Offers practical, localized meal recommendations that align with clients' cultural staples, improving sustainable adherence."
+        }
+      ],
+      beforeVsAfter: {
+        beforeTitle: "Before Automation (Manual Coach Messaging)",
+        before: [
+          "Coaches spend hours replying to repetitive basic questions ('Can I eat rice?', 'What to have for breakfast?').",
+          "Replies delayed by hours or days while coaches conduct in-person consultations.",
+          "Risk of emergency health symptoms going unnoticed in crowded messaging inboxes.",
+          "Clients abandon restrictive, culturally unfamiliar meal plans that fail to reflect their daily lifestyle."
+        ],
+        afterTitle: "With WhatsApp Health Automation",
+        after: [
+          "Immediate 24/7 conversational support on WhatsApp for dietary questions and habit pacing.",
+          "Immediate safety escalation protocol for acute clinical red flags.",
+          "Individual conversation memory remembered per phone ID without requiring logins or extra apps.",
+          "Practical, portion-based micro-coaching using familiar foods drives long-term client retention."
+        ]
+      },
+      potentialMetrics: [
+        "Response speed to daily client nutrition and meal questions",
+        "Client adherence and engagement frequency between coaching appointments",
+        "Hours of repetitive messaging time saved for clinic staff and coaches"
+      ]
+    },
     problem: "Wellness clinics, fitness coaches, and health practitioners struggle to provide timely 24/7 dietary habit guidance. Most automated chatbots offer generic, unengaging advice, fail to understand local foods (like Indian meal staples), or dangerously attempt to diagnose medical symptoms.",
     solution: "Built a production WhatsApp conversational agent powered by n8n, Groq's high-speed Qwen 3.8 27B model, and custom session-keyed buffer memory. The agent features an extensive clinical safety constitution: immediate triage for medical red flags (chest pain, fainting, shortness of breath), strict refusal to prescribe drugs or diagnose diseases, non-judgmental portion micro-coaching (palm/fist rules), and localized food intelligence.",
     implementationStatus: "Configured & Tested",
